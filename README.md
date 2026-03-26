@@ -48,9 +48,9 @@ dolios              # start chatting!
 Or install manually:
 
 ```bash
-git clone --recurse-submodules https://github.com/guglxni/dolios-agent.git
+git clone https://github.com/guglxni/dolios-agent.git
 cd dolios-agent
-uv sync
+bash scripts/install.sh    # clones vendor repos + installs deps
 dolios setup
 dolios
 ```
@@ -121,12 +121,15 @@ dolios doctor       # Diagnose any issues
 
 | Section | What's Covered |
 |---------|---------------|
-| [Technical PRD](dolios-technical-prd.md) | Full architecture spec, integration maps, implementation roadmap |
-| [CLAUDE.md](CLAUDE.md) | AI-DLC workflow rules, code conventions, security rules |
-| [AGENTS.md](AGENTS.md) | Instructions for AI coding agents working on this repo |
-| [Security Audit](SECURITY-AUDIT.md) | OWASP 2025 audit — 67 findings, all resolved |
-| [Contributing](CONTRIBUTING.md) | Development setup, PR process, skill/policy authoring |
-| [Brand Identity](brand/) | SOUL.md personality, voice guidelines, brand context |
+| [Quickstart](#quick-install) | Install → setup → first conversation in 2 minutes |
+| [Technical PRD](https://github.com/guglxni/dolios-agent/blob/main/dolios-technical-prd.md) | Full architecture spec, integration maps, implementation roadmap |
+| [AI-DLC Workflow](https://github.com/guglxni/dolios-agent/blob/main/CLAUDE.md) | Workflow rules, code conventions, security rules (DOLIOS-SEC) |
+| [Agent Instructions](https://github.com/guglxni/dolios-agent/blob/main/AGENTS.md) | Instructions for AI coding agents working on this repo |
+| [Security Audit](https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md) | OWASP 2025 + LLM Top 10 audit — 67 findings, all resolved |
+| [Contributing](https://github.com/guglxni/dolios-agent/blob/main/CONTRIBUTING.md) | Development setup, PR process, skill/policy authoring |
+| [Brand Identity](https://github.com/guglxni/dolios-agent/tree/main/brand) | SOUL.md personality, voice guidelines, brand context |
+| [Skills](https://github.com/guglxni/dolios-agent/tree/main/skills) | 6 Dolios-specific skills with SKILL.md definitions |
+| [Sandbox Policies](https://github.com/guglxni/dolios-agent/tree/main/dolios-blueprint/policies) | NemoClaw-format Landlock/seccomp/network policies |
 
 ---
 
@@ -168,8 +171,9 @@ We welcome contributions! See the [Contributing Guide](CONTRIBUTING.md) for deve
 Quick start for contributors:
 
 ```bash
-git clone --recurse-submodules https://github.com/guglxni/dolios-agent.git
+git clone https://github.com/guglxni/dolios-agent.git
 cd dolios-agent
+bash scripts/install.sh    # clones vendor repos + installs deps
 uv sync --extra dev
 uv run pytest -v           # 56 tests passing
 uv run ruff check dolios/  # lint
@@ -182,9 +186,10 @@ Development follows the [AI-DLC methodology](CLAUDE.md): read the PRD, validate 
 
 ## Community
 
+- Discord — Coming soon
+- [Skills Hub](https://agentskills.io) — Browse and share agent skills (agentskills.io open standard)
 - [GitHub Issues](https://github.com/guglxni/dolios-agent/issues) — Bug reports and feature requests
-- [Technical PRD](dolios-technical-prd.md) — Full architecture specification
-- [Security Audit](SECURITY-AUDIT.md) — Complete OWASP 2025 audit report
+- [GitHub Discussions](https://github.com/guglxni/dolios-agent/discussions) — Questions, ideas, and show-and-tell
 
 ---
 

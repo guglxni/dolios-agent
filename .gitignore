@@ -61,3 +61,6 @@ htmlcov/
 
 # pyright
 pyrightconfig.json
+
+# Vendor repos — cloned at install time, not committed
+vendor/
