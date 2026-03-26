@@ -83,7 +83,7 @@ dolios doctor       # Diagnose any issues
            │
            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                    DOLIOS ORCHESTRATOR                        │
+│                    DOLIOS ORCHESTRATOR                       │
 │                                                              │
 │  Policy Bridge · Inference Router · AI-DLC Engine            │
 │  Brand Layer   · Trace Collector  · Prompt Injection Scan    │
@@ -91,7 +91,7 @@ dolios doctor       # Diagnose any issues
            │
            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                   HERMES AGENT RUNTIME                        │
+│                   HERMES AGENT RUNTIME                       │
 │                                                              │
 │  Agent Loop · Skills · Memory · Tools · Gateway              │
 │  Subagents  · Honcho · Cron   · MCP   · FTS5 Search          │
@@ -99,7 +99,7 @@ dolios doctor       # Diagnose any issues
            │
            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                   NEMOCLAW SANDBOX LAYER                      │
+│                   NEMOCLAW SANDBOX LAYER                     │
 │                                                              │
 │  Network Policy · Filesystem Isolation · Process Sandbox     │
 │  (deny-default) · (Landlock strict)    · (seccomp)           │
@@ -108,7 +108,7 @@ dolios doctor       # Diagnose any issues
            │
            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│                    INFERENCE PROVIDERS                        │
+│                    INFERENCE PROVIDERS                       │
 │                                                              │
 │  NVIDIA Nemotron · Nous Portal · OpenRouter (200+ models)    │
 │  Kimi / Moonshot · MiniMax     · OpenAI · Local (Ollama)     │
