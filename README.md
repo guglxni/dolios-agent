@@ -11,16 +11,16 @@
   <a href="https://github.com/guglxni"><img src="https://img.shields.io/badge/Built%20by-Aaryan%20Guglani-blueviolet?style=for-the-badge" alt="Built by Aaryan Guglani"></a>
 </p>
 
-**The Crafty Agent — Scheme. Execute. Deliver.** A self-improving AI agent that runs inside a production-grade sandbox. It combines [Hermes Agent](https://github.com/NousResearch/hermes-agent)'s closed learning loop with [NemoClaw](https://github.com/NVIDIA/NemoClaw)'s Landlock/seccomp isolation, wrapped in a unified orchestration layer with multi-provider inference routing, [AI-DLC](https://github.com/awslabs/aidlc-workflows) methodology awareness, and a [DSPy/GEPA](https://github.com/NousResearch/hermes-agent-self-evolution) self-evolution pipeline. Deploy on a $5 VPS, a GPU cluster, or serverless infrastructure that costs nearly nothing when idle.
+**The Crafty Agent: Scheme. Execute. Deliver.** Dolios is a self-improving AI agent with production-grade sandboxing. It builds on [Hermes Agent](https://github.com/NousResearch/hermes-agent)'s closed learning loop and [NemoClaw](https://github.com/NVIDIA/NemoClaw)'s Landlock/seccomp isolation, adding multi-provider inference routing, [AI-DLC](https://github.com/awslabs/aidlc-workflows) methodology awareness, and a [DSPy/GEPA](https://github.com/NousResearch/hermes-agent-self-evolution) self-evolution pipeline. Runs on a $5 VPS, a GPU cluster, or serverless.
 
-Use any model you want — [NVIDIA Nemotron](https://build.nvidia.com), [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), OpenAI, Anthropic, or local models via Ollama/vLLM. Switch with `dolios model` — no code changes, no lock-in.
+Use any model: [NVIDIA Nemotron](https://build.nvidia.com), [Nous Portal](https://portal.nousresearch.com), [OpenRouter](https://openrouter.ai) (200+ models), [Kimi/Moonshot](https://platform.moonshot.ai), [MiniMax](https://www.minimax.io), OpenAI, Anthropic, or local via Ollama/vLLM. Switch with `dolios model`, no code changes, no lock-in.
 
 <table>
-<tr><td><b>Sandboxed execution</b></td><td>Every tool call runs inside a NemoClaw/OpenShell sandbox with Landlock filesystem isolation, seccomp process restrictions, and deny-by-default network policies. No tool can <code>rm -rf /</code> or exfiltrate data — the sandbox blocks it at the kernel level.</td></tr>
+<tr><td><b>Sandboxed execution</b></td><td>Every tool call runs inside a NemoClaw/OpenShell sandbox with Landlock filesystem isolation, seccomp process restrictions, and deny-by-default network policies. No tool can <code>rm -rf /</code> or exfiltrate data; the sandbox blocks it at the kernel level.</td></tr>
 <tr><td><b>Self-improving skills</b></td><td>Closed learning loop: the agent creates procedural skills from experience, improves them via DSPy/GEPA optimization ($2-10 per cycle, no GPU), and persists knowledge across sessions. Compatible with the <a href="https://agentskills.io">agentskills.io</a> open standard.</td></tr>
-<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI — all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
+<tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI, all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
 <tr><td><b>Methodology-aware</b></td><td>AI-DLC workflow engine: Inception → Construction → Operations phases for structured task execution. The agent asks the right questions before coding, follows a plan, and validates before delivering.</td></tr>
-<tr><td><b>Multi-provider inference</b></td><td>Smart routing across NVIDIA, Nous, OpenRouter, OpenAI, Anthropic, Kimi, MiniMax, and local models — all intercepted by the sandbox inference gateway. Cost-aware selection based on task type.</td></tr>
+<tr><td><b>Multi-provider inference</b></td><td>Smart routing across NVIDIA, Nous, OpenRouter, OpenAI, Anthropic, Kimi, MiniMax, and local models, all intercepted by the sandbox inference gateway. Cost-aware selection based on task type.</td></tr>
 <tr><td><b>Security-first</b></td><td>OWASP Top 10:2025 + LLM Top 10:2025 audited. Fail-closed defaults, prompt injection scanning, API key redaction, atomic writes, 7 evolution constraint gates. 67/67 findings resolved.</td></tr>
 <tr><td><b>Research-ready</b></td><td>Batch trajectory generation, Atropos RL environments, execution trace collection, trajectory compression for training the next generation of tool-calling models.</td></tr>
 </table>
@@ -125,7 +125,7 @@ dolios doctor       # Diagnose any issues
 | [Technical PRD](https://github.com/guglxni/dolios-agent/blob/main/dolios-technical-prd.md) | Full architecture spec, integration maps, implementation roadmap |
 | [AI-DLC Workflow](https://github.com/guglxni/dolios-agent/blob/main/CLAUDE.md) | Workflow rules, code conventions, security rules (DOLIOS-SEC) |
 | [Agent Instructions](https://github.com/guglxni/dolios-agent/blob/main/AGENTS.md) | Instructions for AI coding agents working on this repo |
-| [Security Audit](https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md) | OWASP 2025 + LLM Top 10 audit — 67 findings, all resolved |
+| [Security Audit](https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md) | OWASP 2025 + LLM Top 10 audit, 67 findings, all resolved |
 | [Contributing](https://github.com/guglxni/dolios-agent/blob/main/CONTRIBUTING.md) | Development setup, PR process, skill/policy authoring |
 | [Brand Identity](https://github.com/guglxni/dolios-agent/tree/main/brand) | SOUL.md personality, voice guidelines, brand context |
 | [Skills](https://github.com/guglxni/dolios-agent/tree/main/skills) | 6 Dolios-specific skills with SKILL.md definitions |
@@ -135,7 +135,7 @@ dolios doctor       # Diagnose any issues
 
 ## Self-Evolution
 
-Dolios integrates the [hermes-agent-self-evolution](https://github.com/NousResearch/hermes-agent-self-evolution) pipeline for continuous skill improvement. No GPU required — runs via API calls at ~$2-10 per optimization cycle.
+Dolios integrates the [hermes-agent-self-evolution](https://github.com/NousResearch/hermes-agent-self-evolution) pipeline for continuous skill improvement. No GPU required; runs via API calls at ~$2-10 per optimization cycle.
 
 ```bash
 dolios evolve run                    # list available evolution targets
@@ -143,7 +143,7 @@ dolios evolve run --target skill-sandbox-status --iterations 10
 dolios evolve run --target skill-trace-analyze --dry-run
 ```
 
-**Safety guardrails:** 7 constraint gates must ALL pass — tests, size limit, growth limit (max 20%), structural validation, non-empty, semantic preservation, and security pattern detection. Security-critical files (policies, routing code) are excluded from auto-evolution. All changes require human PR review.
+**Safety guardrails:** 7 constraint gates must ALL pass: tests, size limit, growth limit (max 20%), structural validation, non-empty, semantic preservation, and security pattern detection. Security-critical files (policies, routing code) are excluded from auto-evolution. All changes require human PR review.
 
 ---
 
@@ -157,7 +157,7 @@ If you're coming from [Hermes Agent](https://github.com/NousResearch/hermes-agen
 | **Skills** | All 25 Hermes skill categories available, plus 6 Dolios-specific skills |
 | **Memory & sessions** | Preserved via Hermes SessionDB (SQLite + FTS5) |
 | **Tools (40+)** | All available, with NemoClaw policy enforcement layered on top |
-| **Multi-platform gateway** | Telegram, Discord, Slack, WhatsApp, Signal — unchanged |
+| **Multi-platform gateway** | Telegram, Discord, Slack, WhatsApp, Signal (unchanged) |
 | **Cron scheduler** | Unchanged |
 | **Honcho user modeling** | Unchanged |
 | **OpenClaw migration** | Supported via `hermes claw migrate` (inherited from Hermes) |
@@ -195,6 +195,6 @@ Development follows the [AI-DLC methodology](CLAUDE.md): read the PRD, validate 
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
 
 Built on [Hermes Agent](https://github.com/NousResearch/hermes-agent) by [Nous Research](https://nousresearch.com) and [NemoClaw](https://github.com/NVIDIA/NemoClaw) by [NVIDIA](https://nvidia.com).
