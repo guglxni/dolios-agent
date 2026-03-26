@@ -22,9 +22,17 @@ env/
 *.swo
 *~
 
+# Claude Code internal config
+.claude/
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Binary documents (design handoffs, briefs — keep in Figma/Notion, not git)
+*.docx
+*.xlsx
+*.pptx
 
 # Environment / Secrets — broad pattern to catch all variants
 .env*
