@@ -42,6 +42,7 @@ credentials.json
 
 # Dolios runtime
 policies/generated/
+policies/dolios-default.yaml
 *.log
 
 # Traces (large, machine-generated)
