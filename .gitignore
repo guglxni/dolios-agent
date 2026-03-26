@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv — lockfile IS committed for reproducible builds (supply chain security)
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment / Secrets — broad pattern to catch all variants
+.env*
+!.env.example
+*.key
+credentials.json
+
+# Dolios runtime
+policies/generated/
+*.log
+
+# Traces (large, machine-generated)
+traces/
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Ruff
+.ruff_cache/
+
+# pyright
+pyrightconfig.json

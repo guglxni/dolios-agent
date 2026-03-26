@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&amp;display=swap');
+    </style>
+  </defs>
+
+  <!-- Wordmark: DOLIOS -->
+  <text x="20" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">D</text>
+
+  <!-- O with labyrinth motif -->
+  <text x="80" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">O</text>
+  <!-- Labyrinth lines inside the O -->
+  <g transform="translate(108, 48)">
+    <!-- Concentric maze paths inside O -->
+    <path d="M0,8 Q4,0 12,0 Q20,0 24,8" fill="none" stroke="#1A1A2E" stroke-width="1.2" opacity="0.4"/>
+    <path d="M2,14 Q6,6 12,6 Q18,6 22,14" fill="none" stroke="#1A1A2E" stroke-width="1" opacity="0.3"/>
+    <path d="M4,20 Q8,12 12,12 Q16,12 20,20" fill="none" stroke="#1A1A2E" stroke-width="0.8" opacity="0.25"/>
+    <!-- Signal Red execution path through the O -->
+    <line x1="-2" y1="14" x2="26" y2="14" stroke="#E94560" stroke-width="1.5" opacity="0.9"/>
+  </g>
+
+  <text x="148" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">L</text>
+  <text x="202" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">I</text>
+  <text x="240" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">O</text>
+  <!-- Second O labyrinth accent -->
+  <g transform="translate(268, 48)">
+    <path d="M0,8 Q4,0 12,0 Q20,0 24,8" fill="none" stroke="#1A1A2E" stroke-width="1.2" opacity="0.4"/>
+    <path d="M2,14 Q6,6 12,6 Q18,6 22,14" fill="none" stroke="#1A1A2E" stroke-width="1" opacity="0.3"/>
+    <line x1="-2" y1="14" x2="26" y2="14" stroke="#E94560" stroke-width="1.5" opacity="0.9"/>
+  </g>
+
+  <text x="308" y="82" font-family="'Playfair Display', Georgia, 'Times New Roman', serif" font-weight="700" font-size="72" fill="#1A1A2E" letter-spacing="2">S</text>
+</svg>

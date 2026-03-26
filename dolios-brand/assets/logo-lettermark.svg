@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Lettermark: Geometric D with execution arrow -->
+
+  <!-- Half-circle D shape -->
+  <path d="M16,8 L16,56 Q48,56 48,32 Q48,8 16,8 Z" fill="#1A1A2E" />
+
+  <!-- Inner cutout to form the D -->
+  <path d="M22,14 L22,50 Q42,50 42,32 Q42,14 22,14 Z" fill="white" />
+
+  <!-- Signal Red arrow emerging from center -->
+  <g>
+    <!-- Arrow shaft -->
+    <rect x="22" y="29" width="24" height="6" fill="#E94560" />
+    <!-- Arrow head -->
+    <polygon points="46,24 58,32 46,40" fill="#E94560" />
+  </g>
+</svg>

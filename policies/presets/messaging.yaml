@@ -1,0 +1,28 @@
+version: "1.0"
+metadata:
+  name: dolios-messaging
+  description: Network policy additions for messaging platform integrations
+
+network:
+  allow:
+    - host: "api.telegram.org"
+      ports: [443]
+      label: "Telegram Bot API"
+    - host: "discord.com"
+      ports: [443]
+      label: "Discord API"
+    - host: "gateway.discord.gg"
+      ports: [443]
+      label: "Discord Gateway"
+    - host: "slack.com"
+      ports: [443]
+      label: "Slack API"
+    - host: "*.slack.com"
+      ports: [443]
+      label: "Slack Workspace"
+    - host: "web.whatsapp.com"
+      ports: [443]
+      label: "WhatsApp Web"
+    - host: "signal.org"
+      ports: [443]
+      label: "Signal"

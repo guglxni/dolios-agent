@@ -1,0 +1,35 @@
+/* ============================================
+   DOLIOS — Design Token: Color Palette
+   Version 1.0 | March 2026
+   ============================================ */
+
+:root {
+  /* ---- Primary Palette ---- */
+  --color-deep-midnight:    #1A1A2E;  /* 60% — backgrounds, wordmark, headers */
+  --color-signal-red:       #E94560;  /* 10% — CTAs, active states, action spark */
+  --color-strategy-blue:    #0F3460;  /* 25% — secondary text, code blocks, links */
+
+  /* ---- Secondary Palette ---- */
+  --color-dark-navy:        #16213E;  /* gradients, sidebars, card surfaces */
+  --color-antiquity-gold:   #C4A35A;  /* 5% — accent details, Greek letterforms */
+  --color-light-gray:       #F5F5F7;  /* page backgrounds, table headers */
+
+  /* ---- Semantic Tokens ---- */
+  --color-text-primary:     var(--color-deep-midnight);
+  --color-text-secondary:   var(--color-strategy-blue);
+  --color-text-muted:       #6B7280;
+  --color-bg-primary:       var(--color-light-gray);
+  --color-bg-dark:          var(--color-deep-midnight);
+  --color-bg-card:          var(--color-dark-navy);
+  --color-action:           var(--color-signal-red);
+  --color-accent:           var(--color-antiquity-gold);
+  --color-surface:          #FFFFFF;
+
+  /* ---- RGB Variants (for opacity manipulation) ---- */
+  --color-deep-midnight-rgb:  26, 26, 46;
+  --color-signal-red-rgb:     233, 69, 96;
+  --color-strategy-blue-rgb:  15, 52, 96;
+  --color-dark-navy-rgb:      22, 33, 62;
+  --color-antiquity-gold-rgb: 196, 163, 90;
+  --color-light-gray-rgb:     245, 245, 247;
+}

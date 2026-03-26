@@ -1,0 +1,144 @@
+version: "0.1.0"
+min_openshell_version: "0.1.0"
+digest: ""
+
+profiles:
+  - default       # OpenRouter via Hermes multi-provider routing
+  - nvidia        # NVIDIA Nemotron via NemoClaw native gateway
+  - nous          # Nous Portal (Hermes 3)
+  - openai        # OpenAI GPT-4o
+  - local-ollama  # Local Ollama
+  - local-vllm    # Local vLLM
+
+description: |
+  Dolios blueprint: orchestrates Hermes Agent inside an OpenShell sandbox
+  with NemoClaw-style policy enforcement, multi-provider inference routing,
+  and self-evolution pipeline integration.
+
+  Unlike NemoClaw's default blueprint which installs OpenClaw, this blueprint
+  installs Hermes Agent v0.3.0 with Python 3.12, uv, and Dolios orchestrator.
+
+components:
+  sandbox:
+    image: "dolios-agent:latest"
+    name: "dolios"
+    forward_ports:
+      - 8080     # Dolios API / TUI gateway
+      - 18789    # Hermes Agent gateway (Telegram, Discord, etc.)
+
+  agent:
+    runtime: "hermes-agent"
+    version: "0.3.0"
+    python_version: "3.12"
+    package_manager: "uv"
+    soul_md: "/sandbox/dolios/brand/SOUL.md"
+    context_files:
+      - "/sandbox/dolios/CLAUDE.md"
+      - "/sandbox/dolios/brand/context.md"
+    skills_dir: "/sandbox/skills"
+    memory_dir: "/sandbox/memory"
+    workspace_dir: "/sandbox/workspace"
+
+  inference:
+    profiles:
+      default:
+        provider_type: "openai"
+        provider_name: "openrouter"
+        endpoint: "https://openrouter.ai/api/v1"
+        model: "nous/hermes-3-llama-3.1-405b"
+        credential_env: "OPENROUTER_API_KEY"
+
+      nvidia:
+        provider_type: "nvidia"
+        provider_name: "nvidia-inference"
+        endpoint: "https://integrate.api.nvidia.com/v1"
+        model: "nvidia/nemotron-3-super-120b-a12b"
+        credential_env: "NVIDIA_API_KEY"
+
+      nous:
+        provider_type: "openai"
+        provider_name: "nous-portal"
+        endpoint: "https://portal.nousresearch.com/v1"
+        model: "hermes-3-405b"
+        credential_env: "NOUS_API_KEY"
+
+      openai:
+        provider_type: "openai"
+        provider_name: "openai"
+        endpoint: "https://api.openai.com/v1"
+        model: "gpt-4o"
+        credential_env: "OPENAI_API_KEY"
+
+      local-ollama:
+        provider_type: "openai"
+        provider_name: "ollama-local"
+        endpoint: "http://host.docker.internal:11434/v1"
+        model: "hermes3:latest"
+        credential_env: ""
+        credential_default: "ollama"
+
+      local-vllm:
+        provider_type: "openai"
+        provider_name: "vllm-local"
+        endpoint: "http://host.docker.internal:8000/v1"
+        model: "NousResearch/Hermes-3-Llama-3.1-8B"
+        credential_env: "OPENAI_API_KEY"
+        credential_default: "dummy"
+
+  policy:
+    base: "policies/dolios-sandbox.yaml"
+    additions:
+      hermes_gateway:
+        name: hermes_gateway
+        endpoints:
+          - host: "api.telegram.org"
+            port: 443
+            protocol: rest
+          - host: "discord.com"
+            port: 443
+            protocol: rest
+          - host: "gateway.discord.gg"
+            port: 443
+            protocol: rest
+          - host: "slack.com"
+            port: 443
+            protocol: rest
+
+      github_tools:
+        name: github_tools
+        endpoints:
+          - host: "api.github.com"
+            port: 443
+            protocol: rest
+          - host: "github.com"
+            port: 443
+            protocol: rest
+
+      web_search:
+        name: web_search
+        endpoints:
+          - host: "api.search.brave.com"
+            port: 443
+            protocol: rest
+          - host: "www.googleapis.com"
+            port: 443
+            protocol: rest
+
+      package_registries:
+        name: package_registries
+        endpoints:
+          - host: "pypi.org"
+            port: 443
+            protocol: rest
+          - host: "files.pythonhosted.org"
+            port: 443
+            protocol: rest
+          - host: "registry.npmjs.org"
+            port: 443
+            protocol: rest
+
+  evolution:
+    traces_dir: "/sandbox/memory/traces"
+    optimizer: "gepa"
+    eval_model: "openai/gpt-4.1-mini"
+    auto_pr: false

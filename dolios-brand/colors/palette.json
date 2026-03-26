@@ -1,0 +1,68 @@
+{
+  "brand": "Dolios",
+  "version": "1.0",
+  "generated": "2026-03-23",
+  "colors": {
+    "primary": {
+      "deep-midnight": {
+        "hex": "#1A1A2E",
+        "rgb": "rgb(26, 26, 46)",
+        "rgba": "rgba(26, 26, 46, 1)",
+        "hsl": "hsl(240, 28%, 14%)",
+        "usage": "Primary backgrounds, wordmark, headers, hero sections",
+        "ratio": "60%"
+      },
+      "signal-red": {
+        "hex": "#E94560",
+        "rgb": "rgb(233, 69, 96)",
+        "rgba": "rgba(233, 69, 96, 1)",
+        "hsl": "hsl(350, 80%, 59%)",
+        "usage": "CTAs, active states, status indicators, action spark",
+        "ratio": "10%"
+      },
+      "strategy-blue": {
+        "hex": "#0F3460",
+        "rgb": "rgb(15, 52, 96)",
+        "rgba": "rgba(15, 52, 96, 1)",
+        "hsl": "hsl(213, 73%, 22%)",
+        "usage": "Secondary text, code blocks, technical UI, links",
+        "ratio": "25%"
+      }
+    },
+    "secondary": {
+      "dark-navy": {
+        "hex": "#16213E",
+        "rgb": "rgb(22, 33, 62)",
+        "rgba": "rgba(22, 33, 62, 1)",
+        "hsl": "hsl(224, 48%, 16%)",
+        "usage": "Gradients, sidebar backgrounds, card surfaces"
+      },
+      "antiquity-gold": {
+        "hex": "#C4A35A",
+        "rgb": "rgb(196, 163, 90)",
+        "rgba": "rgba(196, 163, 90, 1)",
+        "hsl": "hsl(41, 48%, 56%)",
+        "usage": "Accent details, Greek letterforms, premium tier indicators",
+        "ratio": "5%"
+      },
+      "light-gray": {
+        "hex": "#F5F5F7",
+        "rgb": "rgb(245, 245, 247)",
+        "rgba": "rgba(245, 245, 247, 1)",
+        "hsl": "hsl(240, 14%, 96%)",
+        "usage": "Page backgrounds, table headers, input fields"
+      }
+    },
+    "semantic": {
+      "text-primary": "#1A1A2E",
+      "text-secondary": "#0F3460",
+      "text-muted": "#6B7280",
+      "background-primary": "#F5F5F7",
+      "background-dark": "#1A1A2E",
+      "background-card": "#16213E",
+      "action": "#E94560",
+      "accent": "#C4A35A",
+      "surface": "#FFFFFF"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+name: Feature Request
+description: Suggest a feature for Dolios
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem does this feature solve?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How should this work?
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Orchestrator
+        - Sandbox / NemoClaw
+        - Inference Router
+        - Self-Evolution
+        - CLI
+        - Skills
+        - AI-DLC Engine
+        - Documentation
+        - Other
+    validations:
+      required: true
