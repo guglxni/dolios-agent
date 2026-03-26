@@ -1,0 +1,131 @@
+/* ============================================
+   DOLIOS — Design Token: Typography Scale
+   Version 1.0 | March 2026
+   ============================================ */
+
+/* ---- Font Face Declarations ---- */
+/* Primary fonts loaded via Google Fonts or self-hosted */
+
+:root {
+  /* ---- Font Families ---- */
+  --font-display:  'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body:     'Inter', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:     'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  --font-greek:    'Noto Serif', Georgia, serif;
+
+  /* ---- Base Size ---- */
+  --font-size-base: 16px;
+  --line-height-base: 1.6;
+}
+
+/* ---- Display / H1 ---- */
+.dolios-display,
+.dolios-h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+  color: var(--color-deep-midnight, #1A1A2E);
+}
+
+/* Responsive display */
+@media (max-width: 768px) {
+  .dolios-display,
+  .dolios-h1 {
+    font-size: 36px;
+  }
+}
+
+/* ---- Heading H2 ---- */
+.dolios-h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: var(--color-deep-midnight, #1A1A2E);
+}
+
+/* ---- Heading H3 ---- */
+.dolios-h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  color: var(--color-deep-midnight, #1A1A2E);
+}
+
+/* ---- Body ---- */
+.dolios-body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--color-text-primary, #1A1A2E);
+}
+
+.dolios-body-lg {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+
+/* ---- UI Labels ---- */
+.dolios-label {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6B7280);
+}
+
+.dolios-label-lg {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+/* ---- Code / Technical ---- */
+.dolios-code {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  color: var(--color-strategy-blue, #0F3460);
+}
+
+.dolios-code-lg {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* ---- Greek Accent ---- */
+.dolios-greek {
+  font-family: var(--font-greek);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--color-antiquity-gold, #C4A35A);
+}
+
+/* ---- Tagline ---- */
+.dolios-tagline {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #6B7280);
+}

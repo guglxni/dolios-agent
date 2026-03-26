@@ -1,0 +1,106 @@
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only:
+    - /usr
+    - /lib
+    - /proc
+    - /dev/urandom
+    - /etc
+    - /opt/dolios                     # Dolios + Hermes Agent code (immutable)
+    - /sandbox/.dolios                # Immutable config
+    - /sandbox/dolios/brand           # Brand assets (immutable)
+    - /sandbox/dolios/policies        # Policy definitions (immutable)
+  read_write:
+    # Only specific subdirectories — NOT the broad /sandbox parent
+    - /sandbox/workspace              # User project workspace
+    - /sandbox/skills                 # Skill files (evolvable)
+    - /sandbox/memory                 # Agent memory + traces
+    - /sandbox/.dolios-data           # Writable state (symlinked)
+    - /tmp
+    - /dev/null
+
+landlock:
+  compatibility: strict  # Fail-closed: refuse to start if Landlock unavailable
+
+process:
+  run_as_user: sandbox
+  run_as_group: sandbox
+  blocked_syscalls:
+    - ptrace
+    - mount
+    - reboot
+    - kexec_load
+    - init_module
+    - finit_module
+
+network_policies:
+  # Inference providers — controlled by Dolios inference router
+  inference_openrouter:
+    name: inference_openrouter
+    endpoints:
+      - host: openrouter.ai
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/api/v1/**" }
+          - allow: { method: GET, path: "/api/v1/**" }
+
+  inference_nvidia:
+    name: inference_nvidia
+    endpoints:
+      - host: integrate.api.nvidia.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/**" }
+
+  inference_nous:
+    name: inference_nous
+    endpoints:
+      - host: portal.nousresearch.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/**" }
+          - allow: { method: GET, path: "/v1/**" }
+
+  inference_openai:
+    name: inference_openai
+    endpoints:
+      - host: api.openai.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/**" }
+
+  inference_anthropic:
+    name: inference_anthropic
+    endpoints:
+      - host: api.anthropic.com
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/**" }
+
+  inference_kimi:
+    name: inference_kimi
+    endpoints:
+      - host: api.moonshot.ai
+        port: 443
+        protocol: rest
+        enforcement: enforce
+        tls: terminate
+        rules:
+          - allow: { method: POST, path: "/v1/**" }

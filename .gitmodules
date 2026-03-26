@@ -1,0 +1,9 @@
+[submodule "vendor/nemoclaw"]
+	path = vendor/nemoclaw
+	url = https://github.com/NVIDIA/NemoClaw.git
+[submodule "vendor/hermes-agent"]
+	path = vendor/hermes-agent
+	url = https://github.com/NousResearch/hermes-agent.git
+[submodule "vendor/hermes-agent-self-evolution"]
+	path = vendor/hermes-agent-self-evolution
+	url = https://github.com/NousResearch/hermes-agent-self-evolution.git

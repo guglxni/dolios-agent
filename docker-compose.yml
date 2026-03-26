@@ -1,0 +1,54 @@
+# Dolios Agent — Full Stack Local Development
+#
+# Usage:
+#   docker compose up        # Start Dolios agent
+#   docker compose up -d     # Start in background
+#   docker compose logs -f   # Follow logs
+#   docker compose down      # Stop all services
+
+services:
+  dolios:
+    build: .
+    container_name: dolios-agent
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Mount workspace for persistent file access
+      - ./workspace:/sandbox/workspace
+      # Mount skills for live editing
+      - ./skills:/sandbox/skills
+      # Persist traces for evolution pipeline (must match sandbox user paths)
+      - dolios-traces:/sandbox/memory/traces
+      # Persist memory across restarts
+      - dolios-memory:/sandbox/memory
+    environment:
+      # Inference providers (set these in .env)
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - NOUS_API_KEY=${NOUS_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Dolios config
+      - DOLIOS_LOG_LEVEL=${DOLIOS_LOG_LEVEL:-INFO}
+      - DOLIOS_INFERENCE_PROVIDER=${DOLIOS_INFERENCE_PROVIDER:-openrouter}
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=512M
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - dolios-net
+
+networks:
+  dolios-net:
+    driver: bridge
+
+volumes:
+  dolios-traces:
+    driver: local
+  dolios-memory:
+    driver: local

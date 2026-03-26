@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Pictorial Mark: Greek Delta (Δ) with internal node graph -->
+
+  <!-- Delta triangle outline -->
+  <polygon points="32,6 4,58 60,58" fill="none" stroke="#1A1A2E" stroke-width="3.5" stroke-linejoin="round"/>
+
+  <!-- Internal node graph connections (Strategy Blue lines) -->
+  <line x1="32" y1="24" x2="22" y2="44" stroke="#0F3460" stroke-width="1.8"/>
+  <line x1="32" y1="24" x2="42" y2="44" stroke="#0F3460" stroke-width="1.8"/>
+  <line x1="22" y1="44" x2="42" y2="44" stroke="#0F3460" stroke-width="1.8"/>
+
+  <!-- Node dots (Signal Red) -->
+  <circle cx="32" cy="24" r="4" fill="#E94560"/>
+  <circle cx="22" cy="44" r="4" fill="#E94560"/>
+  <circle cx="42" cy="44" r="4" fill="#E94560"/>
+</svg>
