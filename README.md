@@ -187,9 +187,9 @@ Development follows the [AI-DLC methodology](CLAUDE.md): read the PRD, validate 
 ## Community
 
 - Discord — Coming soon
+- GitHub Discussions — Coming soon
 - [Skills Hub](https://agentskills.io) — Browse and share agent skills (agentskills.io open standard)
 - [GitHub Issues](https://github.com/guglxni/dolios-agent/issues) — Bug reports and feature requests
-- [GitHub Discussions](https://github.com/guglxni/dolios-agent/discussions) — Questions, ideas, and show-and-tell
 
 ---
 
