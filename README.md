@@ -76,43 +76,43 @@ dolios doctor       # Diagnose any issues
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                        USER INTERFACES                           │
-│  CLI (TUI)  │  Telegram  │  Discord  │  Slack  │  WhatsApp      │
-└──────────┬───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                      USER INTERFACES                         │
+│    CLI (TUI) · Telegram · Discord · Slack · WhatsApp         │
+└──────────┬───────────────────────────────────────────────────┘
            │
            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    DOLIOS ORCHESTRATOR                            │
-│                                                                  │
-│  Policy Bridge  │  Inference Router  │  AI-DLC Engine            │
-│  Brand Layer    │  Trace Collector   │  Prompt Injection Scan    │
-└──────────┬───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    DOLIOS ORCHESTRATOR                        │
+│                                                              │
+│  Policy Bridge · Inference Router · AI-DLC Engine            │
+│  Brand Layer   · Trace Collector  · Prompt Injection Scan    │
+└──────────┬───────────────────────────────────────────────────┘
            │
            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                  HERMES AGENT RUNTIME                             │
-│                                                                  │
-│  Agent Loop  │  Skills  │  Memory  │  Tools  │  Gateway          │
-│  Subagents   │  Honcho  │  Cron    │  MCP    │  FTS5 Search      │
-└──────────┬───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                   HERMES AGENT RUNTIME                        │
+│                                                              │
+│  Agent Loop · Skills · Memory · Tools · Gateway              │
+│  Subagents  · Honcho · Cron   · MCP   · FTS5 Search          │
+└──────────┬───────────────────────────────────────────────────┘
            │
            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    NEMOCLAW SANDBOX LAYER                         │
-│                                                                  │
-│  Network Policy  │  Filesystem Isolation  │  Process Sandbox      │
-│  (deny-default)  │  (Landlock strict)     │  (seccomp)            │
-│  Inference Gateway  │  Blueprint Lifecycle  │  Policy YAML         │
-└──────────┬───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                   NEMOCLAW SANDBOX LAYER                      │
+│                                                              │
+│  Network Policy · Filesystem Isolation · Process Sandbox     │
+│  (deny-default) · (Landlock strict)    · (seccomp)           │
+│  Inference Gateway · Blueprint Lifecycle · Policy YAML       │
+└──────────┬───────────────────────────────────────────────────┘
            │
            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    INFERENCE PROVIDERS                            │
-│                                                                  │
-│  NVIDIA Nemotron  │  Nous Portal  │  OpenRouter (200+ models)    │
-│  Kimi / Moonshot  │  MiniMax      │  OpenAI  │  Local (Ollama)   │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                    INFERENCE PROVIDERS                        │
+│                                                              │
+│  NVIDIA Nemotron · Nous Portal · OpenRouter (200+ models)    │
+│  Kimi / Moonshot · MiniMax     · OpenAI · Local (Ollama)     │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ---
