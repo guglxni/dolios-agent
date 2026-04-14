@@ -22,7 +22,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra hermes
 
       - name: Sync upstreams and AI-DLC rules
         run: uv run dolios upstream sync --include-aidlc
