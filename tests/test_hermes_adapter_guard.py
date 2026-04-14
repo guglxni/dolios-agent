@@ -87,9 +87,7 @@ def test_optional_import_filter_suppresses_known_warning(caplog):
         adapter._suppress_optional_tool_import_warnings(),
         caplog.at_level(logging.WARNING, logger="model_tools"),
     ):
-        logger.warning(
-            "Could not import tool module tools.web_tools: No module named 'firecrawl'"
-        )
+        logger.warning("Could not import tool module tools.web_tools: No module named 'firecrawl'")
         logger.warning("Could not import tool module tools.other: missing")
 
     messages = [record.getMessage() for record in caplog.records]

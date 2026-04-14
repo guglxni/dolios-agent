@@ -53,24 +53,44 @@ TASK_PROFILES: dict[str, dict[str, Any]] = {
 # These will be refined by the self-evolution pipeline over time
 PROVIDER_CAPABILITIES: dict[str, dict[str, float]] = {
     "nvidia": {
-        "speed": 0.8, "code_quality": 0.85, "creativity": 0.7,
-        "reasoning": 0.9, "context": 0.8, "cost": 0.6,
+        "speed": 0.8,
+        "code_quality": 0.85,
+        "creativity": 0.7,
+        "reasoning": 0.9,
+        "context": 0.8,
+        "cost": 0.6,
     },
     "openrouter": {
-        "speed": 0.7, "code_quality": 0.9, "creativity": 0.85,
-        "reasoning": 0.9, "context": 0.9, "cost": 0.5,
+        "speed": 0.7,
+        "code_quality": 0.9,
+        "creativity": 0.85,
+        "reasoning": 0.9,
+        "context": 0.9,
+        "cost": 0.5,
     },
     "nous": {
-        "speed": 0.7, "code_quality": 0.85, "creativity": 0.8,
-        "reasoning": 0.85, "context": 0.85, "cost": 0.7,
+        "speed": 0.7,
+        "code_quality": 0.85,
+        "creativity": 0.8,
+        "reasoning": 0.85,
+        "context": 0.85,
+        "cost": 0.7,
     },
     "openai": {
-        "speed": 0.9, "code_quality": 0.9, "creativity": 0.85,
-        "reasoning": 0.9, "context": 0.85, "cost": 0.3,
+        "speed": 0.9,
+        "code_quality": 0.9,
+        "creativity": 0.85,
+        "reasoning": 0.9,
+        "context": 0.85,
+        "cost": 0.3,
     },
     "local": {
-        "speed": 0.5, "code_quality": 0.6, "creativity": 0.5,
-        "reasoning": 0.6, "context": 0.7, "cost": 1.0,
+        "speed": 0.5,
+        "code_quality": 0.6,
+        "creativity": 0.5,
+        "reasoning": 0.6,
+        "context": 0.7,
+        "cost": 1.0,
     },
 }
 
@@ -89,9 +109,7 @@ class InferenceRoute:
     def __repr__(self) -> str:
         """Redact api_key from repr to prevent accidental logging."""
         key_display = (
-            f"{self.api_key[:4]}...{self.api_key[-4:]}"
-            if len(self.api_key) > 8
-            else "***"
+            f"{self.api_key[:4]}...{self.api_key[-4:]}" if len(self.api_key) > 8 else "***"
         )
         return (
             f"InferenceRoute(provider={self.provider!r}, model={self.model!r}, "
@@ -217,10 +235,12 @@ class InferenceRouter:
 
         result = []
         for name, provider in self.config.inference.providers.items():
-            result.append({
-                "name": name,
-                "model": provider.get("model"),
-                "available": name in self._available_providers,
-                "base_url": provider.get("base_url"),
-            })
+            result.append(
+                {
+                    "name": name,
+                    "model": provider.get("model"),
+                    "available": name in self._available_providers,
+                    "base_url": provider.get("base_url"),
+                }
+            )
         return result

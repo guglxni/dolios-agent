@@ -129,15 +129,18 @@ class NemoClawBackend:
 
         state_dir = STATE_DIR_BASE / run_id
         state_dir.mkdir(parents=True, exist_ok=True)
-        save_json(state_dir / "plan.json", {
-            "run_id": self._plan.run_id,
-            "profile": self._plan.profile,
-            "sandbox": self._plan.sandbox,
-            "inference": self._plan.inference,
-            "policy_additions": self._plan.policy_additions,
-            "dry_run": self._plan.dry_run,
-            "planned_at": utc_now_iso(),
-        })
+        save_json(
+            state_dir / "plan.json",
+            {
+                "run_id": self._plan.run_id,
+                "profile": self._plan.profile,
+                "sandbox": self._plan.sandbox,
+                "inference": self._plan.inference,
+                "policy_additions": self._plan.policy_additions,
+                "dry_run": self._plan.dry_run,
+                "planned_at": utc_now_iso(),
+            },
+        )
 
         logger.info(f"Plan created: {run_id} (profile: {self._plan.profile})")
         return self._plan
@@ -162,10 +165,13 @@ class NemoClawBackend:
         self.state.run_id = self._plan.run_id
 
         state_dir = STATE_DIR_BASE / self._plan.run_id
-        save_json(state_dir / "state.json", {
-            "running": True,
-            "applied_at": utc_now_iso(),
-        })
+        save_json(
+            state_dir / "state.json",
+            {
+                "running": True,
+                "applied_at": utc_now_iso(),
+            },
+        )
 
         logger.info(f"Sandbox '{self.state.sandbox_name}' running")
 
@@ -173,11 +179,17 @@ class NemoClawBackend:
         """Apply via OpenShell CLI (full Landlock/seccomp isolation)."""
         assert self._openshell and self._plan
 
-        run_cmd([
-            self._openshell, "sandbox", "create",
-            "--name", self._plan.sandbox["name"],
-            "--image", self._plan.sandbox["image"],
-        ])
+        run_cmd(
+            [
+                self._openshell,
+                "sandbox",
+                "create",
+                "--name",
+                self._plan.sandbox["name"],
+                "--image",
+                self._plan.sandbox["image"],
+            ]
+        )
         logger.info("Sandbox created via OpenShell")
 
         inference = self._plan.inference
@@ -188,23 +200,39 @@ class NemoClawBackend:
         provider_env["DOLIOS_PROVIDER_KEY"] = api_key
         subprocess.run(
             [
-                self._openshell, "provider", "create",
-                "--name", inference.get("provider_name", "dolios-inference"),
-                "--type", inference.get("provider_type", "openai"),
-                "--endpoint", inference.get("endpoint", ""),
-                "--api-key-env", "DOLIOS_PROVIDER_KEY",
+                self._openshell,
+                "provider",
+                "create",
+                "--name",
+                inference.get("provider_name", "dolios-inference"),
+                "--type",
+                inference.get("provider_type", "openai"),
+                "--endpoint",
+                inference.get("endpoint", ""),
+                "--api-key-env",
+                "DOLIOS_PROVIDER_KEY",
             ],
-            capture_output=True, text=True, check=True, timeout=60,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=60,
             env=provider_env,
         )
         logger.info(f"Inference provider configured: {inference.get('provider_name')}")
 
-        run_cmd([
-            self._openshell, "inference", "set",
-            "--sandbox", self._plan.sandbox["name"],
-            "--provider", inference.get("provider_name", ""),
-            "--model", inference.get("model", ""),
-        ])
+        run_cmd(
+            [
+                self._openshell,
+                "inference",
+                "set",
+                "--sandbox",
+                self._plan.sandbox["name"],
+                "--provider",
+                inference.get("provider_name", ""),
+                "--model",
+                inference.get("model", ""),
+            ]
+        )
         logger.info("Inference route set")
 
     async def _apply_docker_fallback(self) -> None:
@@ -240,18 +268,29 @@ class NemoClawBackend:
             with os.fdopen(fd, "w") as f:
                 f.write("\n".join(env_lines) + "\n")
 
-            run_cmd([
-                "docker", "run", "-d",
-                "--name", sandbox["name"],
-                *port_args,
-                "--env-file", env_file_path,
-                "--read-only",
-                "--security-opt", "no-new-privileges:true",
-                "--cap-drop", "ALL",
-                "--tmpfs", "/tmp:size=512M",
-                "-v", f"{self.config.home / 'traces'}:/sandbox/memory/traces",
-                sandbox["image"],
-            ], timeout=120)
+            run_cmd(
+                [
+                    "docker",
+                    "run",
+                    "-d",
+                    "--name",
+                    sandbox["name"],
+                    *port_args,
+                    "--env-file",
+                    env_file_path,
+                    "--read-only",
+                    "--security-opt",
+                    "no-new-privileges:true",
+                    "--cap-drop",
+                    "ALL",
+                    "--tmpfs",
+                    "/tmp:size=512M",
+                    "-v",
+                    f"{self.config.home / 'traces'}:/sandbox/memory/traces",
+                    sandbox["image"],
+                ],
+                timeout=120,
+            )
             logger.info(f"Docker container '{sandbox['name']}' started")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             if getattr(self.config, "allow_unsandboxed", False):
@@ -297,17 +336,27 @@ class NemoClawBackend:
 
         if self._openshell:
             sandbox_cmd = [
-                self._openshell, "exec",
-                "--sandbox", self.state.sandbox_name,
-                "--workdir", cwd,
-                "--", "bash", "-c", command,
+                self._openshell,
+                "exec",
+                "--sandbox",
+                self.state.sandbox_name,
+                "--workdir",
+                cwd,
+                "--",
+                "bash",
+                "-c",
+                command,
             ]
         else:
             sandbox_cmd = [
-                "docker", "exec",
-                "-w", cwd,
+                "docker",
+                "exec",
+                "-w",
+                cwd,
                 self.state.sandbox_name,
-                "bash", "-c", command,
+                "bash",
+                "-c",
+                command,
             ]
 
         try:
@@ -316,9 +365,7 @@ class NemoClawBackend:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=timeout
-            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
             return CommandResult(
                 exit_code=proc.returncode or 0,
@@ -387,10 +434,13 @@ class NemoClawBackend:
 
         if self.state.run_id:
             state_dir = STATE_DIR_BASE / self.state.run_id
-            save_json(state_dir / "state.json", {
-                "running": False,
-                "rolled_back_at": utc_now_iso(),
-            })
+            save_json(
+                state_dir / "state.json",
+                {
+                    "running": False,
+                    "rolled_back_at": utc_now_iso(),
+                },
+            )
 
         self.state.running = False
         logger.info("Sandbox rolled back")

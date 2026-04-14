@@ -36,61 +36,111 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     "web_search": {
         "name": "web_search",
         "endpoints": [
-            {"host": "www.googleapis.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
-            {"host": "api.search.brave.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
+            {
+                "host": "www.googleapis.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
+            {
+                "host": "api.search.brave.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
         ],
     },
     "github": {
         "name": "github_tools",
         "endpoints": [
-            {"host": "api.github.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "github.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
+            {
+                "host": "api.github.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "github.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
         ],
     },
     "browser": {
         "name": "browser_access",
         "endpoints": [
-            {"host": "*", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "passthrough",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "*", "port": 80, "protocol": "rest",
-             "enforcement": "enforce", "tls": "passthrough",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
+            {
+                "host": "*",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "passthrough",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "*",
+                "port": 80,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "passthrough",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
         ],
     },
     "web_fetch": {
         "name": "web_fetch",
         "endpoints": [
-            {"host": "*", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "passthrough",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
+            {
+                "host": "*",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "passthrough",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
         ],
     },
     "image_generation": {
         "name": "image_generation",
         "endpoints": [
-            {"host": "fal.run", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "POST", "path": "/**"}}]},
+            {
+                "host": "fal.run",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "POST", "path": "/**"}}],
+            },
         ],
     },
     "email": {
         "name": "email_access",
         "endpoints": [
-            {"host": "gmail.googleapis.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "oauth2.googleapis.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "POST", "path": "/**"}}]},
+            {
+                "host": "gmail.googleapis.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "oauth2.googleapis.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "POST", "path": "/**"}}],
+            },
         ],
     },
 }
@@ -100,40 +150,75 @@ MESSAGING_POLICIES: dict[str, dict[str, Any]] = {
     "telegram": {
         "name": "telegram_bot",
         "endpoints": [
-            {"host": "api.telegram.org", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [
-                 {"allow": {"method": "GET", "path": "/bot*/**"}},
-                 {"allow": {"method": "POST", "path": "/bot*/**"}},
-             ]},
+            {
+                "host": "api.telegram.org",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [
+                    {"allow": {"method": "GET", "path": "/bot*/**"}},
+                    {"allow": {"method": "POST", "path": "/bot*/**"}},
+                ],
+            },
         ],
     },
     "discord": {
         "name": "discord",
         "endpoints": [
-            {"host": "discord.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "gateway.discord.gg", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "cdn.discordapp.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "GET", "path": "/**"}}]},
+            {
+                "host": "discord.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "gateway.discord.gg",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "cdn.discordapp.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "GET", "path": "/**"}}],
+            },
         ],
     },
     "slack": {
         "name": "slack",
         "endpoints": [
-            {"host": "slack.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "api.slack.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "*", "path": "/**"}}]},
-            {"host": "hooks.slack.com", "port": 443, "protocol": "rest",
-             "enforcement": "enforce", "tls": "terminate",
-             "rules": [{"allow": {"method": "POST", "path": "/**"}}]},
+            {
+                "host": "slack.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "api.slack.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "*", "path": "/**"}}],
+            },
+            {
+                "host": "hooks.slack.com",
+                "port": 443,
+                "protocol": "rest",
+                "enforcement": "enforce",
+                "tls": "terminate",
+                "rules": [{"allow": {"method": "POST", "path": "/**"}}],
+            },
         ],
     },
 }
@@ -179,14 +264,16 @@ class PolicyBridge:
                 continue
             policy["network_policies"][f"inference_{name}"] = {
                 "name": f"inference_{name}",
-                "endpoints": [{
-                    "host": host,
-                    "port": 443,
-                    "protocol": "rest",
-                    "enforcement": "enforce",
-                    "tls": "terminate",
-                    "rules": [{"allow": {"method": "POST", "path": "/v1/**"}}],
-                }],
+                "endpoints": [
+                    {
+                        "host": host,
+                        "port": 443,
+                        "protocol": "rest",
+                        "enforcement": "enforce",
+                        "tls": "terminate",
+                        "rules": [{"allow": {"method": "POST", "path": "/v1/**"}}],
+                    }
+                ],
             }
 
         # Add tool-specific policies
@@ -252,9 +339,7 @@ class PolicyBridge:
         """Get the NemoClaw policy block for a specific tool."""
         return TOOL_POLICIES.get(tool_name)
 
-    def request_endpoint_approval(
-        self, host: str, port: int, tool_name: str, reason: str
-    ) -> None:
+    def request_endpoint_approval(self, host: str, port: int, tool_name: str, reason: str) -> None:
         """Surface a new endpoint for operator approval.
 
         Uses file locking to prevent race conditions when multiple
@@ -268,14 +353,16 @@ class PolicyBridge:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
             try:
                 pending = load_yaml(pending_file, default=[])
-                pending.append({
-                    "host": host,
-                    "port": port,
-                    "tool": tool_name,
-                    "reason": reason,
-                    "status": "pending",
-                    "requested_at": datetime.now(UTC).isoformat(),
-                })
+                pending.append(
+                    {
+                        "host": host,
+                        "port": port,
+                        "tool": tool_name,
+                        "reason": reason,
+                        "status": "pending",
+                        "requested_at": datetime.now(UTC).isoformat(),
+                    }
+                )
                 save_yaml(pending_file, pending)
             finally:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)
@@ -289,14 +376,12 @@ class PolicyBridge:
         # Validate preset name to prevent path traversal
         if not re.match(r"^[a-zA-Z0-9_-]+$", preset_name):
             raise ValueError(
-                "Invalid preset name (alphanumeric, hyphens, underscores only): "
-                f"{preset_name}"
+                f"Invalid preset name (alphanumeric, hyphens, underscores only): {preset_name}"
             )
 
         # Check vendor presets first
         vendor_preset = (
-            Path("vendor/nemoclaw/nemoclaw-blueprint/policies/presets")
-            / f"{preset_name}.yaml"
+            Path("vendor/nemoclaw/nemoclaw-blueprint/policies/presets") / f"{preset_name}.yaml"
         )
         result = load_yaml(vendor_preset)
         if result is not None:
@@ -356,14 +441,16 @@ class PolicyBridge:
 
             policy["network_policies"][safe_name] = {
                 "name": safe_name,
-                "endpoints": [{
-                    "host": host,
-                    "port": entry.get("ports", [443])[0] if entry.get("ports") else 443,
-                    "protocol": "rest",
-                    "enforcement": "enforce",
-                    "tls": "terminate",
-                    "rules": [{"allow": {"method": "*", "path": "/**"}}],
-                }],
+                "endpoints": [
+                    {
+                        "host": host,
+                        "port": entry.get("ports", [443])[0] if entry.get("ports") else 443,
+                        "protocol": "rest",
+                        "enforcement": "enforce",
+                        "tls": "terminate",
+                        "rules": [{"allow": {"method": "*", "path": "/**"}}],
+                    }
+                ],
             }
 
         return policy

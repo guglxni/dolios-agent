@@ -1,0 +1,57 @@
+# CodeQL — GitHub's semantic code analysis for security vulnerabilities
+# Runs on pushes to main and weekly to catch new vulnerability patterns.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dolios/**"
+      - "environments/**"
+      - "evolution/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "dolios/**"
+      - "environments/**"
+      - "evolution/**"
+  schedule:
+    # Weekly deep scan (Wednesdays 06:00 UTC)
+    - cron: "0 6 * * 3"
+
+permissions:
+  security-events: write
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: +security-extended,security-and-quality
+          # Only scan Dolios-owned code, not vendor
+          paths:
+            - dolios
+            - environments
+            - evolution
+          paths-ignore:
+            - vendor
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:python"

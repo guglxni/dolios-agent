@@ -125,7 +125,9 @@ class TraceCollector:
             drop_count = MAX_TRACE_EVENTS // 10
             logger.warning(
                 "Trace %s hit %d events — dropping oldest %d",
-                trace_id, MAX_TRACE_EVENTS, drop_count,
+                trace_id,
+                MAX_TRACE_EVENTS,
+                drop_count,
             )
             trace.events = trace.events[drop_count:]
         trace.events.append(event)
@@ -151,9 +153,7 @@ class TraceCollector:
 
         # Calculate total duration
         start_time = datetime.fromisoformat(trace.started_at)
-        trace.total_duration_ms = (
-            datetime.now(UTC) - start_time
-        ).total_seconds() * 1000
+        trace.total_duration_ms = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
         # Persist to disk using atomic write
         from dolios.io import save_json
@@ -173,14 +173,16 @@ class TraceCollector:
         for path in trace_files:
             with open(path) as f:
                 trace = json.load(f)
-            summaries.append({
-                "trace_id": trace["trace_id"],
-                "task": trace["task_description"][:80],
-                "outcome": trace["outcome"],
-                "duration_ms": trace["total_duration_ms"],
-                "tools_used": len(trace["tools_used"]),
-                "errors": trace["error_count"],
-            })
+            summaries.append(
+                {
+                    "trace_id": trace["trace_id"],
+                    "task": trace["task_description"][:80],
+                    "outcome": trace["outcome"],
+                    "duration_ms": trace["total_duration_ms"],
+                    "tools_used": len(trace["tools_used"]),
+                    "errors": trace["error_count"],
+                }
+            )
 
         return summaries
 

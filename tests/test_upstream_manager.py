@@ -54,13 +54,7 @@ def test_sync_writes_manifest(tmp_path, monkeypatch):
 def test_sync_aidlc_rule_details(tmp_path):
     manager = UpstreamManager(tmp_path)
 
-    source_root = (
-        tmp_path
-        / "vendor"
-        / "aidlc-workflows"
-        / "aidlc-rules"
-        / "aws-aidlc-rule-details"
-    )
+    source_root = tmp_path / "vendor" / "aidlc-workflows" / "aidlc-rules" / "aws-aidlc-rule-details"
     source_file = source_root / "common" / "process-overview.md"
     source_file.parent.mkdir(parents=True, exist_ok=True)
     source_file.write_text("# Process Overview\n")

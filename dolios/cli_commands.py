@@ -37,7 +37,9 @@ def upstream_status(include_aidlc: bool, refresh_remote: bool) -> None:
         remote_sha = (
             item["remote_sha"][:12]
             if item.get("remote_sha")
-            else "(skipped)" if not refresh_remote else "(unavailable)"
+            else "(skipped)"
+            if not refresh_remote
+            else "(unavailable)"
         )
         table.add_row(item["name"], item["path"], local_sha, remote_sha)
 

@@ -82,20 +82,20 @@ class DoliosOrchestrator:
         env = {k: v for k, v in os.environ.items() if k in safe_system_keys}
 
         # Add Hermes Agent config
-        env.update({
-            "HERMES_HOME": str(self.config.home / "hermes"),
-            # Inference routing — Hermes uses OpenAI-compatible env vars
-            "OPENAI_API_BASE": route.base_url,
-            "OPENAI_API_KEY": route.api_key,
-            "DEFAULT_MODEL": route.model,
-            # Terminal environment
-            "TERMINAL_ENV": "docker" if self.config.sandbox.enabled else "local",
-            # Dolios-specific
-            "DOLIOS_SESSION_ID": self._session_id,
-            "DOLIOS_TRACES_DIR": str(
-                Path(self.config.evolution.traces_dir).expanduser()
-            ),
-        })
+        env.update(
+            {
+                "HERMES_HOME": str(self.config.home / "hermes"),
+                # Inference routing — Hermes uses OpenAI-compatible env vars
+                "OPENAI_API_BASE": route.base_url,
+                "OPENAI_API_KEY": route.api_key,
+                "DEFAULT_MODEL": route.model,
+                # Terminal environment
+                "TERMINAL_ENV": "docker" if self.config.sandbox.enabled else "local",
+                # Dolios-specific
+                "DOLIOS_SESSION_ID": self._session_id,
+                "DOLIOS_TRACES_DIR": str(Path(self.config.evolution.traces_dir).expanduser()),
+            }
+        )
 
         return env
 
@@ -285,8 +285,10 @@ class DoliosOrchestrator:
         for key, value in env_vars.items():
             os.environ[key] = value
         # SEC-A09-L1: Log env setup without exposing API keys
-        safe_keys = {k: ("***" if "KEY" in k or "SECRET" in k or "TOKEN" in k else v)
-                     for k, v in env_vars.items()}
+        safe_keys = {
+            k: ("***" if "KEY" in k or "SECRET" in k or "TOKEN" in k else v)
+            for k, v in env_vars.items()
+        }
         logger.debug("Hermes env configured: %s", safe_keys)
 
         try:

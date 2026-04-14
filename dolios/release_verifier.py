@@ -147,8 +147,7 @@ class ReleaseVerifier:
                 name="optional-tool-deps",
                 passed=True,
                 details=(
-                    "missing optional deps: "
-                    f"{', '.join(missing)} (related tools remain disabled)"
+                    f"missing optional deps: {', '.join(missing)} (related tools remain disabled)"
                 ),
             )
 

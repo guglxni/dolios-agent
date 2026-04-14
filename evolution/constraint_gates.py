@@ -25,9 +25,20 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # CQ-M4: Module-level constant to avoid rebuilding on every call
-_STOPWORDS: frozenset[str] = frozenset({
-    "the", "and", "for", "that", "this", "with", "from", "are", "was", "not",
-})
+_STOPWORDS: frozenset[str] = frozenset(
+    {
+        "the",
+        "and",
+        "for",
+        "that",
+        "this",
+        "with",
+        "from",
+        "are",
+        "was",
+        "not",
+    }
+)
 
 
 @dataclass
@@ -78,9 +89,7 @@ def check_size_limit(file_path: Path, max_kb: int = 15) -> GateResult:
     )
 
 
-def check_growth_limit(
-    original: str, evolved: str, max_growth: float = 0.2
-) -> GateResult:
+def check_growth_limit(original: str, evolved: str, max_growth: float = 0.2) -> GateResult:
     """Gate: Evolved content must not grow more than max_growth (20%) over baseline.
 
     Ported from vendor/hermes-agent-self-evolution/evolution/core/constraints.py.
@@ -169,6 +178,7 @@ def check_semantic_preservation(original: str, evolved: str, threshold: float = 
     Uses simple heuristic: shared key terms ratio.
     In production, this would use embedding similarity via the inference router.
     """
+
     def extract_terms(text: str) -> set[str]:
         words = text.lower().split()
         return {w.strip(".,;:!?()[]{}\"'") for w in words if len(w) > 2 and w not in _STOPWORDS}

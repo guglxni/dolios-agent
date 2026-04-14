@@ -45,33 +45,35 @@ class InferenceConfig:
     default_provider: str = "openrouter"
     default_model: str = "nous/hermes-3-llama-3.1-405b"
     max_cost_per_1k_tokens: float = 0.01
-    providers: dict[str, dict] = field(default_factory=lambda: {
-        "nvidia": {
-            "base_url": "https://integrate.api.nvidia.com/v1",
-            "model": "nvidia/nemotron-3-super-120b-a12b",
-            "api_key_env": "NVIDIA_API_KEY",
-        },
-        "openrouter": {
-            "base_url": "https://openrouter.ai/api/v1",
-            "model": "nous/hermes-3-llama-3.1-405b",
-            "api_key_env": "OPENROUTER_API_KEY",
-        },
-        "nous": {
-            "base_url": "https://portal.nousresearch.com/v1",
-            "model": "hermes-3-405b",
-            "api_key_env": "NOUS_API_KEY",
-        },
-        "openai": {
-            "base_url": "https://api.openai.com/v1",
-            "model": "gpt-4o",
-            "api_key_env": "OPENAI_API_KEY",
-        },
-        "local": {
-            "base_url": "http://localhost:11434/v1",
-            "model": "hermes3:latest",
-            "api_key_env": "",
-        },
-    })
+    providers: dict[str, dict] = field(
+        default_factory=lambda: {
+            "nvidia": {
+                "base_url": "https://integrate.api.nvidia.com/v1",
+                "model": "nvidia/nemotron-3-super-120b-a12b",
+                "api_key_env": "NVIDIA_API_KEY",
+            },
+            "openrouter": {
+                "base_url": "https://openrouter.ai/api/v1",
+                "model": "nous/hermes-3-llama-3.1-405b",
+                "api_key_env": "OPENROUTER_API_KEY",
+            },
+            "nous": {
+                "base_url": "https://portal.nousresearch.com/v1",
+                "model": "hermes-3-405b",
+                "api_key_env": "NOUS_API_KEY",
+            },
+            "openai": {
+                "base_url": "https://api.openai.com/v1",
+                "model": "gpt-4o",
+                "api_key_env": "OPENAI_API_KEY",
+            },
+            "local": {
+                "base_url": "http://localhost:11434/v1",
+                "model": "hermes3:latest",
+                "api_key_env": "",
+            },
+        }
+    )
 
 
 @dataclass

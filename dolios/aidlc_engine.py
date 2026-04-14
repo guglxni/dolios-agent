@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 class AIDLCPhase(Enum):
     """AI-DLC workflow phases."""
 
-    INCEPTION = "inception"      # What & Why — requirements, design, risk
+    INCEPTION = "inception"  # What & Why — requirements, design, risk
     CONSTRUCTION = "construction"  # How — implementation, testing, validation
-    OPERATIONS = "operations"    # Deploy & Monitor — deployment, observability
+    OPERATIONS = "operations"  # Deploy & Monitor — deployment, observability
 
 
 PHASE_ORDER: dict[AIDLCPhase, int] = {
@@ -61,19 +61,49 @@ class PhaseTransitionResult:
 # Phase detection keywords in user messages
 PHASE_SIGNALS: dict[AIDLCPhase, list[str]] = {
     AIDLCPhase.INCEPTION: [
-        "what should", "how should", "design", "plan", "requirements",
-        "architecture", "should we", "propose", "strategy", "approach",
-        "evaluate", "assess", "analyze requirements",
+        "what should",
+        "how should",
+        "design",
+        "plan",
+        "requirements",
+        "architecture",
+        "should we",
+        "propose",
+        "strategy",
+        "approach",
+        "evaluate",
+        "assess",
+        "analyze requirements",
     ],
     AIDLCPhase.CONSTRUCTION: [
-        "implement", "build", "code", "write", "create", "fix",
-        "refactor", "test", "add feature", "modify", "update",
-        "debug", "integrate", "configure",
+        "implement",
+        "build",
+        "code",
+        "write",
+        "create",
+        "fix",
+        "refactor",
+        "test",
+        "add feature",
+        "modify",
+        "update",
+        "debug",
+        "integrate",
+        "configure",
     ],
     AIDLCPhase.OPERATIONS: [
-        "deploy", "monitor", "release", "production", "ci/cd",
-        "pipeline", "observability", "metrics", "rollback", "scale",
-        "health check", "status",
+        "deploy",
+        "monitor",
+        "release",
+        "production",
+        "ci/cd",
+        "pipeline",
+        "observability",
+        "metrics",
+        "rollback",
+        "scale",
+        "health check",
+        "status",
     ],
 }
 
