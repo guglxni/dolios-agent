@@ -11,7 +11,7 @@
 
 # --- Builder stage ---
 # Pin base images by digest for supply chain integrity (OWASP A03:2025)
-FROM python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4 AS builder
+FROM python:3.14-slim@sha256:bc389f7dfcb21413e72a28f491985326994795e34d2b86c8ae2f417b4e7818aa AS builder
 
 # Pin uv by version (update digest periodically)
 COPY --from=ghcr.io/astral-sh/uv:0.6.14 /uv /usr/local/bin/uv
@@ -29,7 +29,7 @@ COPY evolution/ evolution/
 RUN uv sync --compile-bytecode 2>/dev/null || uv sync --compile-bytecode
 
 # --- Runtime stage ---
-FROM python:3.12-slim@sha256:3d5ed973e45820f5ba5e46bd065bd88b3a504ff0724d85980dcd05eab361fcf4 AS runtime
+FROM python:3.14-slim@sha256:bc389f7dfcb21413e72a28f491985326994795e34d2b86c8ae2f417b4e7818aa AS runtime
 
 # System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
