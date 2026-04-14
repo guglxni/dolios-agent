@@ -11,6 +11,7 @@ Integration points:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
@@ -67,16 +68,21 @@ class DoliosOrchestrator:
         self._components_initialized = True
 
     def _setup_hermes_env(self, route: InferenceRoute | None = None) -> dict[str, str]:
-        """Configure environment variables for Hermes Agent.
+        """Build a clean environment dict for Hermes Agent subprocesses.
 
-        After setting the active provider's key, unsets any other provider
-        API keys from os.environ to prevent leakage to subprocesses.
+        Returns a minimal env dict containing only the variables Hermes needs.
+        Does NOT mutate os.environ — callers should pass this dict as the
+        subprocess env parameter. (CQ-H2 / SEC-ASI03-M1)
         """
         if route is None:
             route = self.inference_router.route(task_type="general")
 
-        env = {
-            # Hermes Agent config
+        # Start with a minimal allowlist of system env vars
+        safe_system_keys = {"PATH", "HOME", "USER", "LANG", "TERM", "SHELL", "TMPDIR"}
+        env = {k: v for k, v in os.environ.items() if k in safe_system_keys}
+
+        # Add Hermes Agent config
+        env.update({
             "HERMES_HOME": str(self.config.home / "hermes"),
             # Inference routing — Hermes uses OpenAI-compatible env vars
             "OPENAI_API_BASE": route.base_url,
@@ -89,16 +95,7 @@ class DoliosOrchestrator:
             "DOLIOS_TRACES_DIR": str(
                 Path(self.config.evolution.traces_dir).expanduser()
             ),
-        }
-
-        # Unset non-active provider API keys to prevent leakage to subprocesses
-        active_key_env = self.config.inference.providers.get(
-            route.provider, {}
-        ).get("api_key_env", "")
-        for _name, provider in self.config.inference.providers.items():
-            key_env = provider.get("api_key_env", "")
-            if key_env and key_env != active_key_env and key_env in os.environ:
-                del os.environ[key_env]
+        })
 
         return env
 
@@ -118,6 +115,12 @@ class DoliosOrchestrator:
 
         Mirrors Hermes Agent's _scan_context_content() from prompt_builder.py.
         Returns sanitized content, or None if the file should be blocked.
+
+        SEC-A06-L1: This is a **best-effort, defense-in-depth** layer using
+        regex pattern matching.  It will NOT catch all prompt injection attacks
+        (e.g. Unicode homoglyphs, base64 obfuscation, indirect injection).
+        The primary enforcement layer is the policy guard on tool calls and
+        the NemoClaw sandbox network/filesystem isolation.
         """
         import re
 
@@ -277,8 +280,14 @@ class DoliosOrchestrator:
         """
         route = self._active_route
         env_vars = self._setup_hermes_env(route)
+        # Hermes Agent reads os.environ in-process, so we set the vars here.
+        # Only set Dolios-owned keys — never delete existing keys (CQ-H2).
         for key, value in env_vars.items():
             os.environ[key] = value
+        # SEC-A09-L1: Log env setup without exposing API keys
+        safe_keys = {k: ("***" if "KEY" in k or "SECRET" in k or "TOKEN" in k else v)
+                     for k, v in env_vars.items()}
+        logger.debug("Hermes env configured: %s", safe_keys)
 
         try:
             agent = self.runtime.create_agent(
@@ -326,6 +335,13 @@ class DoliosOrchestrator:
         """
         policy = self.policy_bridge.get_policy_for_tool(tool_name)
         if not policy:
+            # SEC-A01-L1: Log unknown tool invocations for audit trail.
+            # Sandbox-level enforcement still applies.
+            logger.info(
+                "SECURITY: Tool '%s' has no declared endpoint policy — "
+                "permitted (sandbox enforcement applies)",
+                tool_name,
+            )
             return True, ""
 
         blocked: list[tuple[str, int]] = []
@@ -449,7 +465,8 @@ class DoliosOrchestrator:
             # the sandbox/network level via NemoClaw policies. We log a
             # post-call trace event for evolution pipeline visibility.
             try:
-                response = agent.chat(user_input)
+                # Run synchronous vendor call off the event loop (CQ-H1)
+                response = await asyncio.to_thread(agent.chat, user_input)
                 if response:
                     console.print(f"\n[bold blue]Δ[/bold blue] {response}\n")
             except Exception as e:

@@ -33,8 +33,8 @@ class BrandLayer:
         """
         soul_path = (self.project_dir / self.config.brand_voice).resolve()
 
-        # Prevent path traversal (e.g., brand_voice: "../../etc/passwd")
-        if not str(soul_path).startswith(str(self.project_dir.resolve())):
+        # Prevent path traversal (e.g., brand_voice: "../../etc/passwd") (CQ-L3)
+        if not soul_path.is_relative_to(self.project_dir.resolve()):
             logger.warning(
                 f"SECURITY: brand_voice path '{self.config.brand_voice}' "
                 f"escapes project directory — using default"

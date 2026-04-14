@@ -147,7 +147,13 @@ class InferenceRouter:
 
         for provider_name in self._available_providers:
             caps = PROVIDER_CAPABILITIES.get(provider_name, {})
-            score = sum(caps.get(trait, 0.5) for trait in preferred_traits) / len(preferred_traits)
+            # CQ-L4: Guard against empty preferred_traits to prevent ZeroDivisionError
+            if not preferred_traits:
+                score = 0.5
+            else:
+                score = sum(caps.get(trait, 0.5) for trait in preferred_traits) / len(
+                    preferred_traits
+                )
 
             if score > best_score:
                 best_score = score

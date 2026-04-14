@@ -11,129 +11,37 @@ All commands execute inside the NemoClaw OpenShell sandbox with:
 - Filesystem isolation (Landlock: writable /sandbox/workspace, /tmp)
 - Process restrictions (seccomp, no privilege escalation)
 - Inference routing through gateway
+
+Helper types (SandboxState, CommandResult, BlueprintPlan) and free functions
+live in nemoclaw_helpers.py to keep this file under 400 lines (CQ-M2).
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
-import shutil
 import subprocess
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
-from dolios.config import DoliosConfig
 from dolios.io import load_json, load_yaml, save_json, utc_now_iso
+from environments.nemoclaw_helpers import (
+    DOLIOS_BLUEPRINT_DIR,
+    STATE_DIR_BASE,
+    BlueprintPlan,
+    CommandResult,
+    SandboxState,
+    find_openshell,
+    run_cmd,
+    validate_endpoint_url,
+)
+
+if TYPE_CHECKING:
+    from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
-
-DOLIOS_BLUEPRINT_DIR = Path("dolios-blueprint")
-STATE_DIR_BASE = Path.home() / ".dolios" / "state" / "runs"
-
-
-@dataclass
-class SandboxState:
-    """Current state of the NemoClaw sandbox."""
-
-    running: bool = False
-    sandbox_name: str = ""
-    run_id: str = ""
-    workspace_path: str = "/sandbox/workspace"
-    policy_loaded: bool = False
-
-
-@dataclass
-class CommandResult:
-    """Result of executing a command in the sandbox."""
-
-    exit_code: int
-    stdout: str
-    stderr: str
-    timed_out: bool = False
-
-
-@dataclass
-class BlueprintPlan:
-    """Plan output from the blueprint lifecycle."""
-
-    run_id: str
-    profile: str
-    sandbox: dict[str, Any]
-    inference: dict[str, Any]
-    policy_additions: dict[str, Any]
-    dry_run: bool = False
-
-
-def _find_openshell() -> str | None:
-    """Find the OpenShell binary."""
-    return shutil.which("openshell")
-
-
-def _run_cmd(
-    args: list[str],
-    *,
-    check: bool = True,
-    capture: bool = True,
-    timeout: int = 60,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command safely — never uses shell=True."""
-    logger.debug(f"Running: {' '.join(args)}")
-    return subprocess.run(
-        args,
-        capture_output=capture,
-        text=True,
-        check=check,
-        timeout=timeout,
-    )
-
-
-def _validate_endpoint_url(url: str) -> str:
-    """Validate endpoint URL — prevent SSRF against private networks.
-
-    Adapted from vendor/nemoclaw runner.py validate_endpoint_url().
-    """
-    import ipaddress
-    import socket
-    from urllib.parse import urlparse
-
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https"):
-        raise ValueError(f"Only HTTP(S) endpoints allowed, got: {parsed.scheme}")
-
-    hostname = parsed.hostname
-    if not hostname:
-        raise ValueError(f"No hostname in URL: {url}")
-
-    # Resolve and check for private IPs
-    try:
-        for info in socket.getaddrinfo(hostname, None):
-            addr = info[4][0]
-            ip = ipaddress.ip_address(addr)
-            if ip.is_private or ip.is_loopback or ip.is_link_local:
-                # Allow localhost only for known local inference ports
-                # with path prefix validation
-                allowed_local = (
-                    ip.is_loopback
-                    and parsed.port in (11434, 8000)
-                    and (not parsed.path or parsed.path.startswith("/v1"))
-                )
-                if not allowed_local:
-                    raise ValueError(
-                        f"Endpoint {hostname} resolves to private IP {addr}. "
-                        "Only localhost:11434 and localhost:8000 with /v1 path allowed."
-                    )
-    except socket.gaierror:
-        raise ValueError(
-            f"DNS resolution failed for {hostname} — rejecting (fail-closed). "
-            "If this is a valid endpoint, ensure DNS is reachable."
-        )
-
-    return url
 
 
 class NemoClawBackend:
@@ -146,7 +54,7 @@ class NemoClawBackend:
     def __init__(self, config: DoliosConfig):
         self.config = config
         self.state = SandboxState(sandbox_name=config.sandbox.sandbox_name)
-        self._openshell = _find_openshell()
+        self._openshell = find_openshell()
         self._blueprint: dict[str, Any] = {}
         self._plan: BlueprintPlan | None = None
 
@@ -163,7 +71,6 @@ class NemoClawBackend:
         provider = self.config.inference.default_provider
         profiles = blueprint.get("components", {}).get("inference", {}).get("profiles", {})
 
-        # Map Dolios provider names to blueprint profile names
         profile_map = {
             "openrouter": "default",
             "nvidia": "nvidia",
@@ -179,21 +86,14 @@ class NemoClawBackend:
         return profile
 
     def plan(self, dry_run: bool = False) -> BlueprintPlan:
-        """PLAN: Validate blueprint, resolve profile, check prerequisites.
-
-        Adapted from NemoClaw runner.py action_plan().
-        """
+        """PLAN: Validate blueprint, resolve profile, check prerequisites."""
         logger.info("Planning Dolios sandbox deployment...")
-
         self._blueprint = self._load_blueprint()
         profile = self._resolve_profile(self._blueprint)
-
-        # Validate endpoint URL if specified
         endpoint = profile.get("endpoint", "")
         if endpoint and "localhost" not in endpoint and "host.docker.internal" not in endpoint:
-            _validate_endpoint_url(endpoint)
+            validate_endpoint_url(endpoint)
 
-        # Check prerequisites
         if not self._openshell:
             logger.warning(
                 "OpenShell not found — sandbox will run in Docker fallback mode. "
@@ -201,9 +101,12 @@ class NemoClawBackend:
             )
 
         sandbox_config = self._blueprint.get("components", {}).get("sandbox", {})
-        policy_additions = self._blueprint.get("components", {}).get("policy", {}).get("additions", {})
+        policy_additions = (
+            self._blueprint.get("components", {}).get("policy", {}).get("additions", {})
+        )
 
-        run_id = f"dolios-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:8]}"
+        timestamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+        run_id = f"dolios-{timestamp}-{uuid.uuid4().hex[:8]}"
 
         self._plan = BlueprintPlan(
             run_id=run_id,
@@ -224,7 +127,6 @@ class NemoClawBackend:
             dry_run=dry_run,
         )
 
-        # Persist plan to state dir
         state_dir = STATE_DIR_BASE / run_id
         state_dir.mkdir(parents=True, exist_ok=True)
         save_json(state_dir / "plan.json", {
@@ -241,10 +143,7 @@ class NemoClawBackend:
         return self._plan
 
     async def apply(self) -> None:
-        """APPLY: Create sandbox, configure provider, set inference route.
-
-        Adapted from NemoClaw runner.py action_apply().
-        """
+        """APPLY: Create sandbox, configure provider, set inference route."""
         if not self._plan:
             self._plan = self.plan()
 
@@ -262,7 +161,6 @@ class NemoClawBackend:
         self.state.running = True
         self.state.run_id = self._plan.run_id
 
-        # Persist state
         state_dir = STATE_DIR_BASE / self._plan.run_id
         save_json(state_dir / "state.json", {
             "running": True,
@@ -275,20 +173,17 @@ class NemoClawBackend:
         """Apply via OpenShell CLI (full Landlock/seccomp isolation)."""
         assert self._openshell and self._plan
 
-        # 1. Create sandbox
-        _run_cmd([
+        run_cmd([
             self._openshell, "sandbox", "create",
             "--name", self._plan.sandbox["name"],
             "--image", self._plan.sandbox["image"],
         ])
         logger.info("Sandbox created via OpenShell")
 
-        # 2. Configure inference provider
         inference = self._plan.inference
         credential_env = inference.get("credential_env", "")
         api_key = os.environ.get(credential_env, "") if credential_env else ""
 
-        # Pass API key via environment, NOT CLI args (visible in ps)
         provider_env = os.environ.copy()
         provider_env["DOLIOS_PROVIDER_KEY"] = api_key
         subprocess.run(
@@ -304,8 +199,7 @@ class NemoClawBackend:
         )
         logger.info(f"Inference provider configured: {inference.get('provider_name')}")
 
-        # 3. Set inference route
-        _run_cmd([
+        run_cmd([
             self._openshell, "inference", "set",
             "--sandbox", self._plan.sandbox["name"],
             "--provider", inference.get("provider_name", ""),
@@ -317,7 +211,7 @@ class NemoClawBackend:
         """Apply via Docker (when OpenShell is not available).
 
         API keys are passed via --env-file with a temp file (0600 permissions),
-        NOT via -e CLI args which are visible in `ps aux` and `docker inspect`.
+        NOT via -e CLI args which are visible in ``ps aux`` and ``docker inspect``.
         """
         import tempfile
 
@@ -327,11 +221,10 @@ class NemoClawBackend:
         inference = self._plan.inference
         credential_env = inference.get("credential_env", "")
 
-        port_args = []
+        port_args: list[str] = []
         for port in sandbox.get("forward_ports", []):
             port_args.extend(["-p", f"127.0.0.1:{port}:{port}"])
 
-        # Write env vars to a temp file instead of passing on CLI
         env_lines = [
             f"DOLIOS_INFERENCE_PROVIDER={self.config.inference.default_provider}",
             f"DOLIOS_INFERENCE_MODEL={inference.get('model', '')}",
@@ -341,14 +234,13 @@ class NemoClawBackend:
 
         env_file = None
         try:
-            # Create temp env file with restricted permissions
             fd, env_file_path = tempfile.mkstemp(prefix="dolios-env-", suffix=".env")
             env_file = env_file_path
             os.chmod(env_file_path, 0o600)
             with os.fdopen(fd, "w") as f:
                 f.write("\n".join(env_lines) + "\n")
 
-            _run_cmd([
+            run_cmd([
                 "docker", "run", "-d",
                 "--name", sandbox["name"],
                 *port_args,
@@ -362,12 +254,19 @@ class NemoClawBackend:
             ], timeout=120)
             logger.info(f"Docker container '{sandbox['name']}' started")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            logger.warning(f"Docker fallback failed: {e}")
-            logger.warning(
-                "SECURITY: Running in local mode — no sandbox isolation active"
-            )
+            if getattr(self.config, "allow_unsandboxed", False):
+                logger.warning(f"Docker fallback failed: {e}")
+                logger.warning(
+                    "SECURITY: Running in local mode — no sandbox isolation active. "
+                    "This was explicitly permitted via allow_unsandboxed config."
+                )
+            else:
+                raise RuntimeError(
+                    f"Sandbox creation failed and unsandboxed mode is not permitted. "
+                    f"Docker error: {e}. "
+                    f"Set allow_unsandboxed=True in config to run without isolation."
+                ) from e
         finally:
-            # Always delete the temp env file containing secrets
             if env_file and os.path.exists(env_file):
                 os.unlink(env_file)
 
@@ -382,11 +281,19 @@ class NemoClawBackend:
         timeout: float = 120.0,
         workdir: str | None = None,
     ) -> CommandResult:
-        """Execute a command inside the sandbox."""
+        """Execute a command inside the sandbox.
+
+        SECURITY TRUST BOUNDARY (SEC-A05-M1): The ``command`` string is passed
+        to ``bash -c`` and may contain arbitrary shell metacharacters.  This is
+        by design — the agent must be able to run arbitrary commands.  The
+        sandbox (OpenShell Landlock/seccomp or Docker --read-only/cap-drop)
+        constrains blast radius.  All calls are logged for audit.
+        """
         if not self.state.running:
             raise RuntimeError("Sandbox not running. Call start() first.")
 
         cwd = workdir or self.state.workspace_path
+        logger.debug("SANDBOX EXEC [%s] cwd=%s cmd=%s", self.state.sandbox_name, cwd, command)
 
         if self._openshell:
             sandbox_cmd = [
@@ -418,7 +325,7 @@ class NemoClawBackend:
                 stdout=stdout.decode() if stdout else "",
                 stderr=stderr.decode() if stderr else "",
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             return CommandResult(
                 exit_code=-1,
@@ -432,10 +339,9 @@ class NemoClawBackend:
         if not self.state.run_id:
             return {"running": False, "message": "No sandbox bootstrapped"}
 
-        state_file = STATE_DIR_BASE / self.state.run_id / "state.json"
         plan_file = STATE_DIR_BASE / self.state.run_id / "plan.json"
+        state_file = STATE_DIR_BASE / self.state.run_id / "state.json"
 
-        # Read profile and inference info from the plan instead of redundant state fields
         profile = self._plan.profile if self._plan else "default"
         inference_endpoint = self._plan.inference.get("endpoint", "") if self._plan else ""
         inference_model = self._plan.inference.get("model", "") if self._plan else ""
@@ -467,25 +373,18 @@ class NemoClawBackend:
         logger.info(f"Rolling back sandbox: {self.state.sandbox_name}")
 
         if self._openshell:
-            _run_cmd(
+            run_cmd(
                 [self._openshell, "sandbox", "stop", self.state.sandbox_name],
                 check=False,
             )
-            _run_cmd(
+            run_cmd(
                 [self._openshell, "sandbox", "remove", self.state.sandbox_name],
                 check=False,
             )
         else:
-            _run_cmd(
-                ["docker", "stop", self.state.sandbox_name],
-                check=False,
-            )
-            _run_cmd(
-                ["docker", "rm", self.state.sandbox_name],
-                check=False,
-            )
+            run_cmd(["docker", "stop", self.state.sandbox_name], check=False)
+            run_cmd(["docker", "rm", self.state.sandbox_name], check=False)
 
-        # Update state
         if self.state.run_id:
             state_dir = STATE_DIR_BASE / self.state.run_id
             save_json(state_dir / "state.json", {

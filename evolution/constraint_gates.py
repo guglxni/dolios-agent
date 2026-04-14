@@ -17,9 +17,17 @@ from __future__ import annotations
 import logging
 import subprocess
 from dataclasses import dataclass
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# CQ-M4: Module-level constant to avoid rebuilding on every call
+_STOPWORDS: frozenset[str] = frozenset({
+    "the", "and", "for", "that", "this", "with", "from", "are", "was", "not",
+})
 
 
 @dataclass
@@ -163,9 +171,7 @@ def check_semantic_preservation(original: str, evolved: str, threshold: float = 
     """
     def extract_terms(text: str) -> set[str]:
         words = text.lower().split()
-        # Filter to meaningful terms (3+ chars, not common stopwords)
-        stopwords = {"the", "and", "for", "that", "this", "with", "from", "are", "was", "not"}
-        return {w.strip(".,;:!?()[]{}\"'") for w in words if len(w) > 2 and w not in stopwords}
+        return {w.strip(".,;:!?()[]{}\"'") for w in words if len(w) > 2 and w not in _STOPWORDS}
 
     original_terms = extract_terms(original)
     evolved_terms = extract_terms(evolved)

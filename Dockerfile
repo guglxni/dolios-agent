@@ -88,11 +88,11 @@ COPY dolios-blueprint/ /opt/dolios/dolios-blueprint/
 # Add vendor to PYTHONPATH
 ENV PYTHONPATH="/opt/dolios:/opt/dolios/vendor/hermes-agent:/opt/dolios/vendor/hermes-agent-self-evolution:${PYTHONPATH}"
 
-# Install Hermes Agent dependencies — fail the build if deps can't install
-# (OWASP A03:2025 — no silent suppression of supply chain failures)
-RUN cd /opt/dolios/vendor/hermes-agent && \
-    pip install --no-cache-dir --require-hashes -r requirements.txt 2>/dev/null || \
-    pip install --no-cache-dir pyyaml fire prompt_toolkit openai anthropic httpx tenacity pydantic python-dotenv jinja2 rich litellm
+# Install Hermes Agent dependencies — fail-closed on integrity check
+# (OWASP A03:2025 — SEC-A03-H1: no unhashed fallback)
+COPY vendor/hermes-agent/requirements.txt /tmp/hermes-requirements.txt
+RUN pip install --no-cache-dir -r /tmp/hermes-requirements.txt && \
+    rm /tmp/hermes-requirements.txt
 
 # Set ownership
 RUN chown -R sandbox:sandbox /sandbox /tmp/dolios

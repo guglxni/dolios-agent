@@ -35,7 +35,8 @@ def ensure_vendor_on_path() -> None:
     for vendor_path in [VENDOR_HERMES, VENDOR_NEMOCLAW, VENDOR_EVOLUTION]:
         resolved = str(vendor_path)
         if resolved not in sys.path:
-            sys.path.insert(0, resolved)
+            # SEC-A08-L1: Append instead of insert to avoid shadowing stdlib modules
+            sys.path.append(resolved)
 
     _paths_added = True
 

@@ -20,6 +20,7 @@ import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 from dolios.io import load_yaml, save_yaml
 
@@ -172,7 +173,10 @@ class PolicyBridge:
             base_url = provider.get("base_url", "")
             if not base_url or "localhost" in base_url or "host.docker.internal" in base_url:
                 continue
-            host = base_url.split("//")[-1].split("/")[0].split(":")[0]
+            # CQ-M1: Use proper URL parsing instead of fragile string splitting
+            host = urlparse(base_url).hostname or ""
+            if not host:
+                continue
             policy["network_policies"][f"inference_{name}"] = {
                 "name": f"inference_{name}",
                 "endpoints": [{

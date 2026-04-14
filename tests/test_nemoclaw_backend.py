@@ -6,11 +6,8 @@ from unittest.mock import patch
 import pytest
 
 from dolios.config import DoliosConfig
-from environments.nemoclaw_backend import (
-    NemoClawBackend,
-    SandboxState,
-    _validate_endpoint_url,
-)
+from environments.nemoclaw_backend import NemoClawBackend
+from environments.nemoclaw_helpers import SandboxState, validate_endpoint_url
 
 
 def test_sandbox_state_defaults():
@@ -19,19 +16,19 @@ def test_sandbox_state_defaults():
     assert state.workspace_path == "/sandbox/workspace"
 
 
-def test_validate_endpoint_url_valid():
-    url = _validate_endpoint_url("https://api.openai.com/v1")
+def testvalidate_endpoint_url_valid():
+    url = validate_endpoint_url("https://api.openai.com/v1")
     assert url == "https://api.openai.com/v1"
 
 
-def test_validate_endpoint_url_invalid_scheme():
+def testvalidate_endpoint_url_invalid_scheme():
     with pytest.raises(ValueError, match="Only HTTP"):
-        _validate_endpoint_url("ftp://evil.com")
+        validate_endpoint_url("ftp://evil.com")
 
 
-def test_validate_endpoint_url_no_hostname():
+def testvalidate_endpoint_url_no_hostname():
     with pytest.raises(ValueError, match="No hostname"):
-        _validate_endpoint_url("https://")
+        validate_endpoint_url("https://")
 
 
 def test_plan_creates_state(tmp_path, monkeypatch):
@@ -84,7 +81,7 @@ def test_plan_creates_state(tmp_path, monkeypatch):
 def test_validate_endpoint_dns_failure_rejects():
     """SSRF fix: DNS resolution failure must reject (fail-closed)."""
     with pytest.raises(ValueError, match="DNS resolution failed"):
-        _validate_endpoint_url("https://nonexistent-host-abc123.invalid/v1")
+        validate_endpoint_url("https://nonexistent-host-abc123.invalid/v1")
 
 
 def test_status_no_sandbox():

@@ -158,16 +158,17 @@ def evolve_skill(
         dry_run=dry_run,
     )
 
+    # CQ-L2: Use project IO helper instead of raw open/json.load
+    from dolios.io import load_json
+
     output_dir = Path("output") / skill_name
     if output_dir.exists():
         runs = sorted(output_dir.iterdir(), reverse=True)
         if runs:
             metrics_file = runs[0] / "metrics.json"
-            if metrics_file.exists():
-                import json
-
-                with open(metrics_file) as f:
-                    return json.load(f)
+            metrics = load_json(metrics_file)
+            if metrics is not None:
+                return metrics
 
     return {"status": "completed", "skill": skill_name}
 
@@ -178,15 +179,20 @@ def validate_evolved_artifact(
     evolved_content: str,
     project_dir: Path | None = None,
 ) -> list[dict[str, Any]]:
-    """Validate an evolved artifact using the vendor constraint system."""
+    """Validate an evolved artifact using the vendor constraint system.
+
+    Prefers vendor constraints when available, falls back to local gates. (CQ-M3)
+    """
     base = project_dir or Path.cwd()
 
     if not _ensure_evolution_vendor(base):
+        # Vendor not available — fall back to local Dolios constraint gates
         from evolution.constraint_gates import run_all_gates
 
         results = run_all_gates(file_path, original_content, evolved_content)
         return [{"gate": r.gate_name, "passed": r.passed, "message": r.message} for r in results]
 
+    # Vendor available — use the full constraint system
     from evolution.core.config import EvolutionConfig
     from evolution.core.constraints import ConstraintValidator
 

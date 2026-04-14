@@ -13,17 +13,20 @@ from __future__ import annotations
 
 import json
 import logging
+from contextlib import suppress
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from enum import Enum
+from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from dolios.config import DoliosConfig
+if TYPE_CHECKING:
+    from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Types of events that can occur in an execution trace."""
 
     TOOL_CALL = "tool_call"
@@ -33,7 +36,7 @@ class EventType(str, Enum):
     PHASE_CHANGE = "phase_change"
 
 
-class Outcome(str, Enum):
+class Outcome(StrEnum):
     """Possible outcomes of an execution trace."""
 
     SUCCESS = "success"
@@ -92,7 +95,7 @@ class TraceCollector:
             trace_id=trace_id,
             session_id=session_id,
             task_description=task,
-            started_at=datetime.now(timezone.utc).isoformat(),
+            started_at=datetime.now(UTC).isoformat(),
         )
         self._active_traces[trace_id] = trace
         logger.debug(f"Trace started: {trace_id}")
@@ -112,14 +115,19 @@ class TraceCollector:
             return
 
         event = TraceEvent(
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             event_type=event_type,
             data=data or {},
             duration_ms=duration_ms,
         )
         if len(trace.events) >= MAX_TRACE_EVENTS:
-            logger.warning(f"Trace {trace_id} hit {MAX_TRACE_EVENTS} events — dropping oldest")
-            trace.events = trace.events[-MAX_TRACE_EVENTS // 2 :]
+            # CQ-L1: FIFO eviction — drop oldest 10% for predictable behavior
+            drop_count = MAX_TRACE_EVENTS // 10
+            logger.warning(
+                "Trace %s hit %d events — dropping oldest %d",
+                trace_id, MAX_TRACE_EVENTS, drop_count,
+            )
+            trace.events = trace.events[drop_count:]
         trace.events.append(event)
 
         # Update counters
@@ -144,13 +152,13 @@ class TraceCollector:
         # Calculate total duration
         start_time = datetime.fromisoformat(trace.started_at)
         trace.total_duration_ms = (
-            datetime.now(timezone.utc) - start_time
+            datetime.now(UTC) - start_time
         ).total_seconds() * 1000
 
         # Persist to disk using atomic write
         from dolios.io import save_json
 
-        date_prefix = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date_prefix = datetime.now(UTC).strftime("%Y-%m-%d")
         trace_path = self.traces_dir / f"{date_prefix}_{trace_id}.json"
         save_json(trace_path, asdict(trace))
 
@@ -185,8 +193,6 @@ class TraceCollector:
         excess = len(trace_files) - MAX_TRACE_FILES
         if excess > 0:
             for old_file in trace_files[:excess]:
-                try:
+                with suppress(OSError):
                     old_file.unlink()
-                except OSError:
-                    pass
             logger.info(f"Rotated {excess} old trace files (keeping {MAX_TRACE_FILES})")

@@ -4,7 +4,8 @@ from pathlib import Path
 
 
 def test_cli_uses_evolution_adapter_seam() -> None:
-    content = Path("dolios/cli.py").read_text()
+    # evolve commands live in cli_commands.py (CQ-M2 split)
+    content = Path("dolios/cli_commands.py").read_text()
     assert "from evolution.dolios_targets import" not in content
     assert "EvolutionRuntimeAdapter" in content
 
