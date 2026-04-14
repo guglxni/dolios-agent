@@ -285,6 +285,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_DEFAULT }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra hermes
+
+      - name: Sync vendor repos (required for Docker COPY)
+        run: uv run dolios upstream sync --include-aidlc
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
