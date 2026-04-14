@@ -43,13 +43,6 @@ jobs:
         with:
           languages: python
           queries: +security-extended,security-and-quality
-          # Only scan Dolios-owned code, not vendor
-          paths:
-            - dolios
-            - environments
-            - evolution
-          paths-ignore:
-            - vendor
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
