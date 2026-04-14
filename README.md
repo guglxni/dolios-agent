@@ -5,7 +5,6 @@
 # Dolios Agent Δ
 
 <p align="center">
-  <a href="https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md"><img src="https://img.shields.io/badge/OWASP-2025%20Audited-FFD700?style=for-the-badge" alt="OWASP Audited"></a>
   <a href="https://github.com/guglxni/dolios-agent"><img src="https://img.shields.io/badge/Tests-98%20Passing-brightgreen?style=for-the-badge" alt="Tests"></a>
   <a href="https://github.com/guglxni/dolios-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/guglxni"><img src="https://img.shields.io/badge/Built%20by-Aaryan%20Guglani-blueviolet?style=for-the-badge" alt="Built by Aaryan Guglani"></a>
@@ -21,7 +20,7 @@ Use any model: [NVIDIA Nemotron](https://build.nvidia.com), [Nous Portal](https:
 <tr><td><b>Lives where you do</b></td><td>Telegram, Discord, Slack, WhatsApp, Signal, and CLI, all from a single gateway process. Voice memo transcription, cross-platform conversation continuity.</td></tr>
 <tr><td><b>Methodology-aware</b></td><td>AI-DLC workflow engine: Inception → Construction → Operations phases for structured task execution. The agent asks the right questions before coding, follows a plan, and validates before delivering.</td></tr>
 <tr><td><b>Multi-provider inference</b></td><td>Smart routing across NVIDIA, Nous, OpenRouter, OpenAI, Anthropic, Kimi, MiniMax, and local models, all intercepted by the sandbox inference gateway. Cost-aware selection based on task type.</td></tr>
-<tr><td><b>Security-first</b></td><td>OWASP Top 10:2025 + LLM Top 10:2025 audited. Fail-closed defaults, prompt injection scanning, API key redaction, atomic writes, 7 evolution constraint gates. 67/67 findings resolved.</td></tr>
+<tr><td><b>Security-first</b></td><td>Fail-closed defaults, prompt injection scanning, API key redaction, atomic writes, and strict evolution constraint gates are built into the runtime and workflows.</td></tr>
 <tr><td><b>Research-ready</b></td><td>Batch trajectory generation, Atropos RL environments, execution trace collection, trajectory compression for training the next generation of tool-calling models.</td></tr>
 </table>
 
@@ -131,7 +130,6 @@ uv sync --extra optional-tools  # Enable optional Firecrawl/FAL-backed tool inte
 | [Technical PRD](https://github.com/guglxni/dolios-agent/blob/main/dolios-technical-prd.md) | Full architecture spec, integration maps, implementation roadmap |
 | [AI-DLC Workflow](https://github.com/guglxni/dolios-agent/blob/main/CLAUDE.md) | Workflow rules, code conventions, security rules (DOLIOS-SEC) |
 | [Agent Instructions](https://github.com/guglxni/dolios-agent/blob/main/AGENTS.md) | Instructions for AI coding agents working on this repo |
-| [Security Audit](https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md) | OWASP 2025 + LLM Top 10 audit, 67 findings, all resolved |
 | [Contributing](https://github.com/guglxni/dolios-agent/blob/main/CONTRIBUTING.md) | Development setup, PR process, skill/policy authoring |
 | [Release Checklist](https://github.com/guglxni/dolios-agent/blob/main/aidlc-docs/release-checklist.md) | Preflight + quality + security gates before release |
 | [Brand Identity](https://github.com/guglxni/dolios-agent/tree/main/brand) | SOUL.md personality, voice guidelines, brand context |

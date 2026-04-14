@@ -126,8 +126,6 @@ Add an entry to `TOOL_POLICIES` in `dolios/policy_bridge.py`:
 - Evolved artifacts pass 7 constraint gates before deployment
 - Context files are scanned for prompt injection patterns
 
-See [`SECURITY-AUDIT.md`](SECURITY-AUDIT.md) for the full audit report.
-
 ## PR Process
 
 1. Fork and create a feature branch: `git checkout -b feat/my-feature`
