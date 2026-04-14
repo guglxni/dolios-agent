@@ -79,7 +79,16 @@ ok "Vendor repos ready"
 
 # Step 5: Install dependencies
 info "Installing dependencies..."
-uv sync
+case "${DOLIOS_INSTALL_OPTIONAL_TOOLS:-0}" in
+    1|true|TRUE|yes|YES)
+        uv sync --extra optional-tools
+        dim "Optional web/image tool dependencies installed"
+        ;;
+    *)
+        uv sync
+        dim "Optional web/image tool dependencies skipped (set DOLIOS_INSTALL_OPTIONAL_TOOLS=1 to include)"
+        ;;
+esac
 ok "Dependencies installed"
 
 # Step 6: Create ~/.dolios

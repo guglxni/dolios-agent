@@ -7,9 +7,12 @@ personality, communication style, and behavioral principles.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from dolios.config import DoliosConfig
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
 

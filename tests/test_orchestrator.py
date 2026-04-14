@@ -2,11 +2,10 @@
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from dolios.config import DoliosConfig
 from dolios.orchestrator import DoliosOrchestrator
-from dolios.vendor_path import ensure_vendor_on_path, VENDOR_HERMES
+from dolios.vendor_path import VENDOR_HERMES, ensure_vendor_on_path
 
 
 def test_orchestrator_init():
@@ -81,3 +80,89 @@ def test_install_skills(tmp_path):
     # Should have our 6 Dolios skills
     skill_dirs = [d for d in skills_dir.iterdir() if d.is_dir()]
     assert len(skill_dirs) >= 6
+
+
+def test_policy_guard_unknown_tool_allowed(monkeypatch):
+    config = DoliosConfig()
+    orch = DoliosOrchestrator(config, Path.cwd())
+    orch._init_components()
+
+    monkeypatch.setattr(orch.policy_bridge, "get_policy_for_tool", lambda _tool: None)
+
+    allowed, reason = orch._policy_guard_tool_call("local_read_file", {})
+    assert allowed is True
+    assert reason == ""
+
+
+def test_policy_guard_known_tool_blocked(monkeypatch):
+    config = DoliosConfig()
+    orch = DoliosOrchestrator(config, Path.cwd())
+    orch._init_components()
+
+    monkeypatch.setattr(
+        orch.policy_bridge,
+        "get_policy_for_tool",
+        lambda _tool: {"endpoints": [{"host": "blocked.example.com", "port": 443}]},
+    )
+    monkeypatch.setattr(orch.policy_bridge, "check_endpoint", lambda _h, _p: False)
+
+    requested = []
+
+    def fake_request(**kwargs):
+        requested.append(kwargs)
+
+    monkeypatch.setattr(orch.policy_bridge, "request_endpoint_approval", fake_request)
+
+    allowed, reason = orch._policy_guard_tool_call("web_search", {"query": "x"})
+
+    assert allowed is False
+    assert "blocked.example.com:443" in reason
+    assert len(requested) == 1
+
+
+class _CaptureConsole:
+    def __init__(self):
+        self.messages = []
+
+    def print(self, message):
+        self.messages.append(str(message))
+
+
+def test_handle_aidlc_command_status():
+    config = DoliosConfig()
+    orch = DoliosOrchestrator(config, Path.cwd())
+    orch._init_components()
+
+    console = _CaptureConsole()
+    handled = orch._handle_aidlc_command("/aidlc status", console)
+
+    assert handled is True
+    assert any("AI-DLC phase" in msg for msg in console.messages)
+
+
+def test_handle_aidlc_command_approve_pending_transition():
+    config = DoliosConfig()
+    config.aidlc_require_phase_approval = True
+    orch = DoliosOrchestrator(config, Path.cwd())
+    orch._init_components()
+
+    # Trigger pending inception -> construction gate.
+    orch.aidlc.evaluate_phase_transition("Implement the policy bridge module")
+
+    console = _CaptureConsole()
+    handled = orch._handle_aidlc_command("/aidlc approve", console)
+
+    assert handled is True
+    assert orch.aidlc.current_phase.value == "construction"
+    assert any("phase approved" in msg.lower() for msg in console.messages)
+
+
+def test_handle_aidlc_command_non_command_passes_through():
+    config = DoliosConfig()
+    orch = DoliosOrchestrator(config, Path.cwd())
+    orch._init_components()
+
+    console = _CaptureConsole()
+    handled = orch._handle_aidlc_command("hello", console)
+
+    assert handled is False

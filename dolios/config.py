@@ -18,6 +18,15 @@ def _dolios_home() -> Path:
     return Path(os.environ.get("DOLIOS_HOME", Path.home() / ".dolios"))
 
 
+def _parse_bool(value: str) -> bool | None:
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return None
+
+
 @dataclass
 class SandboxConfig:
     """NemoClaw sandbox configuration."""
@@ -87,6 +96,7 @@ class DoliosConfig:
     evolution: EvolutionConfig = field(default_factory=EvolutionConfig)
     brand_voice: str = "brand/SOUL.md"
     aidlc_enabled: bool = True
+    aidlc_require_phase_approval: bool = False
     log_level: str = "INFO"
 
     @classmethod
@@ -112,6 +122,14 @@ class DoliosConfig:
             config.inference.default_model = env_model
         if os.environ.get("DOLIOS_SANDBOX_DISABLED", "").lower() in ("1", "true", "yes"):
             config.sandbox.enabled = False
+        if env_aidlc_enabled := os.environ.get("DOLIOS_AIDLC_ENABLED"):
+            parsed = _parse_bool(env_aidlc_enabled)
+            if parsed is not None:
+                config.aidlc_enabled = parsed
+        if env_aidlc_approval := os.environ.get("DOLIOS_AIDLC_REQUIRE_APPROVAL"):
+            parsed = _parse_bool(env_aidlc_approval)
+            if parsed is not None:
+                config.aidlc_require_phase_approval = parsed
         if env_log := os.environ.get("DOLIOS_LOG_LEVEL"):
             config.log_level = env_log
 
@@ -124,13 +142,17 @@ def _merge_yaml(config: DoliosConfig, path: Path) -> None:
 
     data = load_yaml(path, default={})
 
-    sections = {"sandbox": config.sandbox, "inference": config.inference, "evolution": config.evolution}
+    sections = {
+        "sandbox": config.sandbox,
+        "inference": config.inference,
+        "evolution": config.evolution,
+    }
     for name, obj in sections.items():
         if section_data := data.get(name):
             for k, v in section_data.items():
                 if hasattr(obj, k):
                     setattr(obj, k, v)
 
-    for key in ("brand_voice", "aidlc_enabled", "log_level"):
+    for key in ("brand_voice", "aidlc_enabled", "aidlc_require_phase_approval", "log_level"):
         if key in data:
             setattr(config, key, data[key])

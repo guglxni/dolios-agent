@@ -17,12 +17,14 @@ from __future__ import annotations
 
 import fcntl
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from dolios.config import DoliosConfig
 from dolios.io import load_yaml, save_yaml
+
+if TYPE_CHECKING:
+    from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
 
@@ -268,7 +270,7 @@ class PolicyBridge:
                     "tool": tool_name,
                     "reason": reason,
                     "status": "pending",
-                    "requested_at": datetime.now(timezone.utc).isoformat(),
+                    "requested_at": datetime.now(UTC).isoformat(),
                 })
                 save_yaml(pending_file, pending)
             finally:
@@ -282,7 +284,10 @@ class PolicyBridge:
 
         # Validate preset name to prevent path traversal
         if not re.match(r"^[a-zA-Z0-9_-]+$", preset_name):
-            raise ValueError(f"Invalid preset name (alphanumeric, hyphens, underscores only): {preset_name}")
+            raise ValueError(
+                "Invalid preset name (alphanumeric, hyphens, underscores only): "
+                f"{preset_name}"
+            )
 
         # Check vendor presets first
         vendor_preset = (

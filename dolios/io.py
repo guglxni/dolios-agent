@@ -9,11 +9,14 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any
+from contextlib import suppress
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def load_yaml(path: Path, default: Any = None) -> Any:
@@ -64,10 +67,8 @@ def _atomic_write(path: Path, content: str) -> None:
         os.replace(tmp_path, str(path))
     except BaseException:
         # Clean up temp file on any error
-        try:
+        with suppress(OSError):
             os.unlink(tmp_path)
-        except OSError:
-            pass
         raise
 
 
@@ -79,4 +80,4 @@ def ensure_dir(path: Path) -> Path:
 
 def utc_now_iso() -> str:
     """Return current UTC time as ISO 8601 string."""
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

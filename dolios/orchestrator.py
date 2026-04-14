@@ -18,14 +18,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
-from dolios.vendor_path import ensure_vendor_on_path
 
 if TYPE_CHECKING:
     from dolios.aidlc_engine import AIDLCEngine
     from dolios.brand import BrandLayer
     from dolios.inference_router import InferenceRoute, InferenceRouter
+    from dolios.integrations import DoliosFusionRuntime
     from dolios.policy_bridge import PolicyBridge
-    from environments.nemoclaw_backend import NemoClawBackend
 
 logger = logging.getLogger(__name__)
 
@@ -47,28 +46,27 @@ class DoliosOrchestrator:
         self.project_dir = project_dir or Path.cwd()
         self._components_initialized = False
         self._session_id: str = ""
-        self._sandbox: NemoClawBackend | None = None
 
     def _init_components(self) -> None:
         """Lazy-initialize components to avoid import overhead for CLI help."""
         if self._components_initialized:
             return
 
-        ensure_vendor_on_path()
-
         from dolios.aidlc_engine import AIDLCEngine
         from dolios.brand import BrandLayer
         from dolios.inference_router import InferenceRouter
+        from dolios.integrations import DoliosFusionRuntime
         from dolios.policy_bridge import PolicyBridge
 
         self.policy_bridge: PolicyBridge = PolicyBridge(self.config)
         self.inference_router: InferenceRouter = InferenceRouter(self.config)
         self.brand: BrandLayer = BrandLayer(self.config, self.project_dir)
         self.aidlc: AIDLCEngine = AIDLCEngine(self.config)
+        self.runtime: DoliosFusionRuntime = DoliosFusionRuntime(self.config)
 
         self._components_initialized = True
 
-    def _setup_hermes_env(self, route: "InferenceRoute | None" = None) -> dict[str, str]:
+    def _setup_hermes_env(self, route: InferenceRoute | None = None) -> dict[str, str]:
         """Configure environment variables for Hermes Agent.
 
         After setting the active provider's key, unsets any other provider
@@ -97,7 +95,7 @@ class DoliosOrchestrator:
         active_key_env = self.config.inference.providers.get(
             route.provider, {}
         ).get("api_key_env", "")
-        for name, provider in self.config.inference.providers.items():
+        for _name, provider in self.config.inference.providers.items():
             key_env = provider.get("api_key_env", "")
             if key_env and key_env != active_key_env and key_env in os.environ:
                 del os.environ[key_env]
@@ -136,7 +134,10 @@ class DoliosOrchestrator:
         ]
 
         # Check for invisible Unicode (zero-width spaces, directional overrides)
-        invisible_chars = re.findall(r"[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\ufeff]", content)
+        invisible_chars = re.findall(
+            r"[\u200b\u200c\u200d\u200e\u200f\u202a-\u202e\ufeff]",
+            content,
+        )
         if invisible_chars:
             logger.warning(
                 f"SECURITY: Blocked context file '{filename}' — "
@@ -259,15 +260,11 @@ class DoliosOrchestrator:
         3. Plan sandbox resources
         4. Apply — create sandbox, configure provider, set inference route
         """
-        from environments.nemoclaw_backend import NemoClawBackend
-
         logger.info(
             f"Bootstrapping sandbox: {self.config.sandbox.sandbox_name} "
             f"(blueprint v{self.config.sandbox.blueprint_version})"
         )
-
-        self._sandbox = NemoClawBackend(self.config)
-        await self._sandbox.start()
+        await self.runtime.start_sandbox()
 
     async def _start_hermes_agent(self) -> None:
         """Start the Hermes Agent interactive loop.
@@ -284,8 +281,11 @@ class DoliosOrchestrator:
             os.environ[key] = value
 
         try:
-            # Import Hermes Agent components
-            from run_agent import AIAgent
+            agent = self.runtime.create_agent(
+                route,
+                max_iterations=90,
+                policy_guard=self._policy_guard_tool_call,
+            )
         except ImportError:
             logger.error(
                 "Could not import Hermes Agent. "
@@ -294,24 +294,10 @@ class DoliosOrchestrator:
             )
             raise
 
-        # Initialize the agent with Dolios configuration
-        agent = AIAgent(
-            base_url=route.base_url,
-            api_key=route.api_key,
-            model=route.model,
-            max_iterations=90,
-            platform="cli",
-            skip_context_files=False,  # We installed .hermes.md
-            skip_memory=False,
-        )
-
         logger.info(f"Hermes Agent initialized: {route.model} via {route.provider}")
 
         # Start the trace collector for self-evolution
-        from evolution.trace_collector import TraceCollector
-
-        trace_collector = TraceCollector(self.config)
-        trace = trace_collector.start_trace(
+        self.runtime.start_trace(
             trace_id=self._session_id,
             session_id=self._session_id,
             task="interactive_session",
@@ -324,8 +310,91 @@ class DoliosOrchestrator:
         except KeyboardInterrupt:
             logger.info("Session interrupted by user")
         finally:
-            trace_collector.end_trace(self._session_id, outcome="completed")
+            self.runtime.end_trace(self._session_id, outcome="completed")
             logger.info("Trace saved for evolution pipeline")
+
+    def _policy_guard_tool_call(
+        self,
+        tool_name: str,
+        tool_args: dict[str, Any],
+    ) -> tuple[bool, str]:
+        """Pre-dispatch tool guard for known networked tools.
+
+        If a tool has declared endpoints, all endpoints must be allowed in the
+        active policy. Unknown tools are permitted here and are still enforced
+        by sandbox/network controls at execution time.
+        """
+        policy = self.policy_bridge.get_policy_for_tool(tool_name)
+        if not policy:
+            return True, ""
+
+        blocked: list[tuple[str, int]] = []
+        for endpoint in policy.get("endpoints", []):
+            host = endpoint.get("host", "")
+            port = int(endpoint.get("port", 443))
+            if not self.policy_bridge.check_endpoint(host, port):
+                blocked.append((host, port))
+                self.policy_bridge.request_endpoint_approval(
+                    host=host,
+                    port=port,
+                    tool_name=tool_name,
+                    reason=f"Tool call blocked by policy guard. args={tool_args}",
+                )
+
+        if blocked:
+            details = ", ".join(f"{host}:{port}" for host, port in blocked)
+            return False, f"endpoint(s) not allowed: {details}"
+
+        return True, ""
+
+    def _handle_aidlc_command(self, user_input: str, console: Any) -> bool:
+        """Handle local AI-DLC runtime commands without calling the model."""
+        if not user_input.strip().lower().startswith("/aidlc"):
+            return False
+
+        if not self.config.aidlc_enabled:
+            console.print("\n[yellow]AI-DLC workflow support is disabled.[/yellow]\n")
+            return True
+
+        parts = user_input.strip().split()
+        action = parts[1].lower() if len(parts) > 1 else "status"
+
+        if action in {"status", "phase"}:
+            status = self.aidlc.status()
+            console.print(f"\n[bold]AI-DLC phase:[/bold] {status['current_phase'].upper()}")
+            if status["require_phase_approval"]:
+                console.print("[dim]Forward phase changes require approval.[/dim]")
+            if status["pending_transition"]:
+                console.print(
+                    "[yellow]Pending transition:[/yellow] "
+                    f"{status['pending_transition']} (run /aidlc approve)"
+                )
+            console.print(f"\n{self.aidlc.get_phase_prompt()}\n")
+            return True
+
+        if action == "approve":
+            target = parts[2] if len(parts) > 2 else None
+            approved = self.aidlc.approve_transition(target)
+            if approved is None:
+                console.print(
+                    "\n[yellow]No approvable transition found.[/yellow] "
+                    "Use /aidlc status to inspect pending gates.\n"
+                )
+            else:
+                console.print(f"\n[green]AI-DLC phase approved:[/green] {approved.value.upper()}\n")
+            return True
+
+        if action == "help":
+            console.print(
+                "\n[bold]AI-DLC Runtime Commands[/bold]\n"
+                "  /aidlc status            Show current phase and pending gates\n"
+                "  /aidlc approve           Approve pending forward transition\n"
+                "  /aidlc approve <phase>   Approve and move to a specific phase\n"
+            )
+            return True
+
+        console.print("\n[yellow]Unknown /aidlc command.[/yellow] Try /aidlc help.\n")
+        return True
 
     async def _run_agent_loop(self, agent: Any) -> None:
         """Run the Hermes Agent interactive conversation loop.
@@ -354,10 +423,25 @@ class DoliosOrchestrator:
             if user_input.strip().lower() in ("exit", "quit", "/exit", "/quit"):
                 break
 
+            if self._handle_aidlc_command(user_input, console):
+                continue
+
             # Detect AI-DLC phase from user intent
             if self.config.aidlc_enabled:
-                phase = self.aidlc.detect_phase(user_input)
-                logger.debug(f"AI-DLC phase: {phase.value}")
+                phase_result = self.aidlc.evaluate_phase_transition(user_input)
+                logger.debug(
+                    "AI-DLC phase transition: %s -> %s (requested=%s blocked=%s)",
+                    phase_result.previous_phase.value,
+                    phase_result.active_phase.value,
+                    phase_result.requested_phase.value,
+                    phase_result.blocked,
+                )
+                if phase_result.blocked:
+                    console.print(
+                        "\n[yellow]AI-DLC gate:[/yellow] "
+                        f"{phase_result.reason}. Run [bold]/aidlc approve[/bold] to continue.\n"
+                    )
+                    continue
 
             # Send to Hermes Agent
             # NOTE: Pre-dispatch policy checks cannot be injected here without
@@ -382,8 +466,8 @@ class DoliosOrchestrator:
         logger.info("Dolios stopping...")
 
         # Stop sandbox if running
-        if self._sandbox:
-            await self._sandbox.stop()
+        if hasattr(self, "runtime"):
+            await self.runtime.stop_sandbox()
 
         # Flush any pending traces
         logger.info("Session complete.")

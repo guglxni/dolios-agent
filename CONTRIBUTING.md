@@ -29,6 +29,8 @@ In order of priority:
 git clone --recurse-submodules https://github.com/guglxni/dolios-agent.git
 cd dolios-agent
 uv sync --extra dev
+# Optional: enable Firecrawl/FAL-backed Hermes tool integrations
+uv sync --extra optional-tools
 ```
 
 ### Running
@@ -39,6 +41,7 @@ uv run dolios --no-sandbox # run without Docker (dev only)
 uv run pytest -v           # run tests
 uv run ruff check dolios/  # lint
 uv run ruff format dolios/ # format
+uv run dolios verify release # release-readiness checks
 ```
 
 ## Project Structure
@@ -78,6 +81,7 @@ All development follows the AI-DLC methodology defined in [`CLAUDE.md`](CLAUDE.m
 - **Import from `dolios.io`** for all YAML/JSON I/O (atomic writes, consistent error handling).
 - **Import from `dolios.vendor_path`** for all vendor repo access (prevents dependency confusion).
 - **Security-critical files** (policies, routing code) require manual review — they cannot be auto-evolved.
+- **Optional Hermes tool SDKs** are intentionally non-blocking; install `uv sync --extra optional-tools` for web/image integrations.
 
 ## Adding a New Skill
 
@@ -130,7 +134,8 @@ See [`SECURITY-AUDIT.md`](SECURITY-AUDIT.md) for the full audit report.
 2. Make changes following the rules above
 3. Run tests: `uv run pytest -v`
 4. Run lint: `uv run ruff check dolios/`
-5. Submit PR with a clear description of what changed and why
+5. Run release checks: `uv run dolios verify release`
+6. Submit PR with a clear description of what changed and why
 
 ## License
 

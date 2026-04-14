@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md"><img src="https://img.shields.io/badge/OWASP-2025%20Audited-FFD700?style=for-the-badge" alt="OWASP Audited"></a>
-  <a href="https://github.com/guglxni/dolios-agent"><img src="https://img.shields.io/badge/Tests-56%20Passing-brightgreen?style=for-the-badge" alt="Tests"></a>
+  <a href="https://github.com/guglxni/dolios-agent"><img src="https://img.shields.io/badge/Tests-98%20Passing-brightgreen?style=for-the-badge" alt="Tests"></a>
   <a href="https://github.com/guglxni/dolios-agent/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT"></a>
   <a href="https://github.com/guglxni"><img src="https://img.shields.io/badge/Built%20by-Aaryan%20Guglani-blueviolet?style=for-the-badge" alt="Built by Aaryan Guglani"></a>
 </p>
@@ -69,6 +69,12 @@ dolios sandbox approve  # Approve pending endpoint access requests
 dolios evolve run   # Run self-evolution pipeline on a skill
 dolios aidlc        # Show current AI-DLC workflow phase
 dolios doctor       # Diagnose any issues
+dolios upstream status            # Show local/remote upstream commit state
+dolios upstream sync --include-aidlc  # Sync latest upstream repos + AI-DLC rules
+dolios verify release  # Run production-grade release verification checks
+uv sync --extra optional-tools  # Enable optional Firecrawl/FAL-backed tool integrations
+# Optional interactive AI-DLC runtime controls (enable with DOLIOS_AIDLC_REQUIRE_APPROVAL=true):
+# /aidlc status | /aidlc approve | /aidlc approve construction
 ```
 
 ---
@@ -127,6 +133,7 @@ dolios doctor       # Diagnose any issues
 | [Agent Instructions](https://github.com/guglxni/dolios-agent/blob/main/AGENTS.md) | Instructions for AI coding agents working on this repo |
 | [Security Audit](https://github.com/guglxni/dolios-agent/blob/main/SECURITY-AUDIT.md) | OWASP 2025 + LLM Top 10 audit, 67 findings, all resolved |
 | [Contributing](https://github.com/guglxni/dolios-agent/blob/main/CONTRIBUTING.md) | Development setup, PR process, skill/policy authoring |
+| [Release Checklist](https://github.com/guglxni/dolios-agent/blob/main/aidlc-docs/release-checklist.md) | Preflight + quality + security gates before release |
 | [Brand Identity](https://github.com/guglxni/dolios-agent/tree/main/brand) | SOUL.md personality, voice guidelines, brand context |
 | [Skills](https://github.com/guglxni/dolios-agent/tree/main/skills) | 6 Dolios-specific skills with SKILL.md definitions |
 | [Sandbox Policies](https://github.com/guglxni/dolios-agent/tree/main/dolios-blueprint/policies) | NemoClaw-format Landlock/seccomp/network policies |
@@ -145,6 +152,15 @@ dolios evolve run --target skill-trace-analyze --dry-run
 
 **Safety guardrails:** 7 constraint gates must ALL pass: tests, size limit, growth limit (max 20%), structural validation, non-empty, semantic preservation, and security pattern detection. Security-critical files (policies, routing code) are excluded from auto-evolution. All changes require human PR review.
 
+## Optional Integrations
+
+Some Hermes tool modules require optional third-party SDKs. Dolios keeps these integrations optional and reports their status in release verification.
+
+```bash
+uv sync --extra optional-tools
+uv run dolios verify release   # includes optional-tool-deps diagnostic row
+```
+
 ---
 
 ## Migrating from Hermes Agent
@@ -156,7 +172,7 @@ If you're coming from [Hermes Agent](https://github.com/NousResearch/hermes-agen
 | **SOUL.md** | Migrated to `brand/SOUL.md` with Dolios identity |
 | **Skills** | All 25 Hermes skill categories available, plus 6 Dolios-specific skills |
 | **Memory & sessions** | Preserved via Hermes SessionDB (SQLite + FTS5) |
-| **Tools (40+)** | All available, with NemoClaw policy enforcement layered on top |
+| **Tools (40+)** | Core tools available by default; optional web/image integrations available with `uv sync --extra optional-tools`; all still enforced by NemoClaw policy |
 | **Multi-platform gateway** | Telegram, Discord, Slack, WhatsApp, Signal (unchanged) |
 | **Cron scheduler** | Unchanged |
 | **Honcho user modeling** | Unchanged |
@@ -175,7 +191,8 @@ git clone https://github.com/guglxni/dolios-agent.git
 cd dolios-agent
 bash scripts/install.sh    # clones vendor repos + installs deps
 uv sync --extra dev
-uv run pytest -v           # 56 tests passing
+uv sync --extra optional-tools  # optional Firecrawl/FAL integrations
+uv run pytest -v           # 98 tests passing
 uv run ruff check dolios/  # lint
 uv run ruff format dolios/ # format
 ```

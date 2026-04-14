@@ -21,16 +21,16 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any
 
-from dolios.config import DoliosConfig
-from dolios.vendor_path import ensure_vendor_on_path
+if TYPE_CHECKING:
+    from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     """Types of tasks for inference routing."""
 
     GENERAL = "general"
@@ -88,7 +88,11 @@ class InferenceRoute:
 
     def __repr__(self) -> str:
         """Redact api_key from repr to prevent accidental logging."""
-        key_display = f"{self.api_key[:4]}...{self.api_key[-4:]}" if len(self.api_key) > 8 else "***"
+        key_display = (
+            f"{self.api_key[:4]}...{self.api_key[-4:]}"
+            if len(self.api_key) > 8
+            else "***"
+        )
         return (
             f"InferenceRoute(provider={self.provider!r}, model={self.model!r}, "
             f"base_url={self.base_url!r}, api_key='{key_display}', "

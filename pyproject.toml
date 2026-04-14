@@ -1,6 +1,6 @@
 [project]
 name = "dolios"
-version = "0.1.0"
+version = "0.2.0"
 description = "The Crafty Agent — self-improving, sandboxed, methodology-aware agentic AI"
 readme = "README.md"
 license = "MIT"
@@ -49,6 +49,11 @@ messaging = [
     "discord.py>=2.0",
     "slack-sdk>=3.0",
 ]
+optional-tools = [
+    # Optional Hermes integrations loaded when dependencies are present
+    "firecrawl-py",
+    "fal-client",
+]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
@@ -57,7 +62,7 @@ dev = [
     "pyright>=1.1",
 ]
 all = [
-    "dolios[hermes,nemoclaw,evolution,messaging,dev]",
+    "dolios[hermes,nemoclaw,evolution,messaging,optional-tools,dev]",
 ]
 
 [project.scripts]

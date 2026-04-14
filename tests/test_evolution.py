@@ -1,7 +1,5 @@
 """Tests for evolution modules."""
 
-from pathlib import Path
-
 from evolution.constraint_gates import (
     check_growth_limit,
     check_no_security_regression,
