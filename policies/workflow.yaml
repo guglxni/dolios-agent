@@ -1,0 +1,26 @@
+# Dolios Workflow Policy — DAG-based tool ordering enforcement.
+#
+# Schema:
+#   version: "1.0"
+#   policies:
+#     - tool: "tool_name"
+#       requires:
+#         - tool: "predecessor_tool_name"
+#           status: "success"   # "success" = must have succeeded
+#                                # "any"     = must have run (pass or fail)
+#       description: "why this ordering is required"
+#
+# Example:
+#   policies:
+#     - tool: "deploy_production"
+#       requires:
+#         - tool: "run_tests"
+#           status: "success"
+#         - tool: "security_scan"
+#           status: "success"
+#       description: "production deploy requires passing tests and security scan"
+#
+# An empty policies list means no ordering constraints — all tools are permitted.
+
+version: "1.0"
+policies: []

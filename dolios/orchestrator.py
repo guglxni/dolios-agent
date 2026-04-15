@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
 from dolios.security.audit import audit_logger
+from dolios.security.workflow import WorkflowPolicy
 
 if TYPE_CHECKING:
     from dolios.aidlc_engine import AIDLCEngine
@@ -65,6 +66,7 @@ class DoliosOrchestrator:
         self.brand: BrandLayer = BrandLayer(self.config, self.project_dir)
         self.aidlc: AIDLCEngine = AIDLCEngine(self.config)
         self.runtime: DoliosFusionRuntime = DoliosFusionRuntime(self.config)
+        self.workflow_policy = WorkflowPolicy(self.config)
 
         self._components_initialized = True
 
@@ -336,6 +338,19 @@ class DoliosOrchestrator:
         active policy. Unknown tools are permitted here and are still enforced
         by sandbox/network controls at execution time.
         """
+        # Workflow DAG check — must run before endpoint check
+        wf_ok, wf_reason = self.workflow_policy.check(self._session_id, tool_name)
+        if not wf_ok:
+            audit_logger.record(
+                session_id=self._session_id,
+                event="workflow_blocked",
+                tool_name=tool_name,
+                args=tool_args,
+                policy_decision="blocked",
+                reason=wf_reason,
+            )
+            return False, wf_reason
+
         policy = self.policy_bridge.get_policy_for_tool(tool_name)
         if not policy:
             audit_logger.record(
@@ -444,6 +459,7 @@ class DoliosOrchestrator:
         from rich.prompt import Prompt
 
         console = Console()
+        self.workflow_policy.reset_session(self._session_id)
 
         console.print("[bold blue]Δ Dolios[/bold blue] ready. Type your message.\n")
 
@@ -489,10 +505,17 @@ class DoliosOrchestrator:
                 response = await asyncio.to_thread(agent.chat, user_input)
                 if response:
                     console.print(f"\n[bold blue]Δ[/bold blue] {response}\n")
+                # Record successful tool outcome for workflow DAG tracking
+                self.workflow_policy.record_outcome(
+                    self._session_id, "agent_chat", success=True,
+                )
             except Exception as e:
                 # Log full error internally, show sanitized message to user
                 # (OWASP A10:2025 — Mishandling of Exceptional Conditions)
                 logger.error(f"Agent error: {e}", exc_info=True)
+                self.workflow_policy.record_outcome(
+                    self._session_id, "agent_chat", success=False,
+                )
                 console.print(
                     "\n[red]An error occurred processing your request. "
                     "Check logs for details.[/red]\n"
