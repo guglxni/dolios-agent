@@ -609,7 +609,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0,<7" },
     { name = "pyyaml", marker = "extra == 'nemoclaw'", specifier = ">=6.0" },
     { name = "reportlab", marker = "extra == 'evolution'" },
-    { name = "rich", specifier = ">=13.0,<15" },
+    { name = "rich", specifier = ">=13.0,<16" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
     { name = "slack-sdk", marker = "extra == 'messaging'", specifier = ">=3.0" },
     { name = "tenacity", marker = "extra == 'hermes'" },
