@@ -11,6 +11,7 @@ locking so concurrent processes can safely append to the same log.
 
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import hashlib
 import json
@@ -122,11 +123,8 @@ class AuditLogger:
                         os.fsync(f.fileno())
                     os.replace(tmp_path, str(self._log_path))
                 except BaseException:
-                    with open(os.devnull, "w"):
-                        try:
-                            os.unlink(tmp_path)
-                        except OSError:
-                            pass
+                    with contextlib.suppress(OSError):
+                        os.unlink(tmp_path)
                     raise
             finally:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)

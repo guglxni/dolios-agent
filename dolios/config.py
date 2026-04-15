@@ -107,6 +107,13 @@ class WorkflowConfig:
 
 
 @dataclass
+class DLPConfig:
+    """Outbound DLP scanner configuration."""
+
+    enabled: bool = True
+
+
+@dataclass
 class DoliosConfig:
     """Top-level Dolios configuration."""
 
@@ -116,6 +123,7 @@ class DoliosConfig:
     evolution: EvolutionConfig = field(default_factory=EvolutionConfig)
     audit: AuditConfig = field(default_factory=AuditConfig)
     workflow: WorkflowConfig = field(default_factory=WorkflowConfig)
+    dlp: DLPConfig = field(default_factory=DLPConfig)
     brand_voice: str = "brand/SOUL.md"
     aidlc_enabled: bool = True
     aidlc_require_phase_approval: bool = False
@@ -176,6 +184,7 @@ def _merge_yaml(config: DoliosConfig, path: Path) -> None:
         "evolution": config.evolution,
         "audit": config.audit,
         "workflow": config.workflow,
+        "dlp": config.dlp,
     }
     for name, obj in sections.items():
         if section_data := data.get(name):

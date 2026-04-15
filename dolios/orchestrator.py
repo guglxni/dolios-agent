@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
 from dolios.security.audit import audit_logger
+from dolios.security.dlp import DLPScanner
 from dolios.security.vault import CredentialVault
 from dolios.security.workflow import WorkflowPolicy
 
@@ -73,6 +74,7 @@ class DoliosOrchestrator:
         self.aidlc: AIDLCEngine = AIDLCEngine(self.config)
         self.runtime: DoliosFusionRuntime = DoliosFusionRuntime(self.config)
         self.workflow_policy = WorkflowPolicy(self.config)
+        self.dlp_scanner = DLPScanner(self.config)
 
         self._components_initialized = True
 
@@ -92,7 +94,8 @@ class DoliosOrchestrator:
 
         # Resolve API key: prefer vault injection, fall back to route value
         api_key_env = self.config.inference.providers.get(
-            route.provider, {},
+            route.provider,
+            {},
         ).get("api_key_env", "")
         if api_key_env and self.vault.has(api_key_env):
             api_key = self.vault.inject(api_key_env)
@@ -375,6 +378,26 @@ class DoliosOrchestrator:
             )
             return False, wf_reason
 
+        # DLP scan — check for sensitive data in arguments before dispatch
+        capabilities = self.policy_bridge.get_capabilities_for_tool(tool_name)
+        dlp_allowed = capabilities.get("dlp_allowed", []) if capabilities else []
+        clean, findings = self.dlp_scanner.scan(tool_name, tool_args, dlp_allowed)
+        if not clean:
+            for finding in findings:
+                audit_logger.record(
+                    session_id=self._session_id,
+                    event="dlp_blocked",
+                    tool_name=tool_name,
+                    args=tool_args,
+                    policy_decision="blocked",
+                    reason="Sensitive data detected in tool arguments",
+                    extra={
+                        "category": finding.pattern_category,
+                        "field": finding.field_path,
+                    },
+                )
+            return False, f"DLP: sensitive data detected in args ({len(findings)} findings)"
+
         policy = self.policy_bridge.get_policy_for_tool(tool_name)
         if not policy:
             audit_logger.record(
@@ -531,14 +554,18 @@ class DoliosOrchestrator:
                     console.print(f"\n[bold blue]Δ[/bold blue] {response}\n")
                 # Record successful tool outcome for workflow DAG tracking
                 self.workflow_policy.record_outcome(
-                    self._session_id, "agent_chat", success=True,
+                    self._session_id,
+                    "agent_chat",
+                    success=True,
                 )
             except Exception as e:
                 # Log full error internally, show sanitized message to user
                 # (OWASP A10:2025 — Mishandling of Exceptional Conditions)
                 logger.error(f"Agent error: {e}", exc_info=True)
                 self.workflow_policy.record_outcome(
-                    self._session_id, "agent_chat", success=False,
+                    self._session_id,
+                    "agent_chat",
+                    success=False,
                 )
                 console.print(
                     "\n[red]An error occurred processing your request. "
