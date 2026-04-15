@@ -90,6 +90,23 @@ class EvolutionConfig:
 
 
 @dataclass
+class AuditConfig:
+    """Append-only audit trail configuration."""
+
+    enabled: bool = True
+    log_path: str = "~/.dolios/audit.jsonl"
+    max_size_mb: int = 100
+
+
+@dataclass
+class WorkflowConfig:
+    """DAG workflow policy configuration."""
+
+    enabled: bool = True
+    policy_file: str = "policies/workflow.yaml"
+
+
+@dataclass
 class DoliosConfig:
     """Top-level Dolios configuration."""
 
@@ -97,6 +114,8 @@ class DoliosConfig:
     sandbox: SandboxConfig = field(default_factory=SandboxConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)
     evolution: EvolutionConfig = field(default_factory=EvolutionConfig)
+    audit: AuditConfig = field(default_factory=AuditConfig)
+    workflow: WorkflowConfig = field(default_factory=WorkflowConfig)
     brand_voice: str = "brand/SOUL.md"
     aidlc_enabled: bool = True
     aidlc_require_phase_approval: bool = False
@@ -137,6 +156,10 @@ class DoliosConfig:
                 config.aidlc_require_phase_approval = parsed
         if env_log := os.environ.get("DOLIOS_LOG_LEVEL"):
             config.log_level = env_log
+        if env_audit_enabled := os.environ.get("DOLIOS_AUDIT_ENABLED"):
+            parsed = _parse_bool(env_audit_enabled)
+            if parsed is not None:
+                config.audit.enabled = parsed
 
         return config
 
@@ -151,6 +174,8 @@ def _merge_yaml(config: DoliosConfig, path: Path) -> None:
         "sandbox": config.sandbox,
         "inference": config.inference,
         "evolution": config.evolution,
+        "audit": config.audit,
+        "workflow": config.workflow,
     }
     for name, obj in sections.items():
         if section_data := data.get(name):

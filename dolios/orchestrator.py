@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
+from dolios.security.audit import audit_logger
 
 if TYPE_CHECKING:
     from dolios.aidlc_engine import AIDLCEngine
@@ -337,12 +338,13 @@ class DoliosOrchestrator:
         """
         policy = self.policy_bridge.get_policy_for_tool(tool_name)
         if not policy:
-            # SEC-A01-L1: Log unknown tool invocations for audit trail.
-            # Sandbox-level enforcement still applies.
-            logger.info(
-                "SECURITY: Tool '%s' has no declared endpoint policy — "
-                "permitted (sandbox enforcement applies)",
-                tool_name,
+            audit_logger.record(
+                session_id=self._session_id,
+                event="tool_unknown",
+                tool_name=tool_name,
+                args=tool_args,
+                policy_decision="allowed",
+                reason="No declared endpoint policy — sandbox enforcement applies",
             )
             return True, ""
 
@@ -361,8 +363,24 @@ class DoliosOrchestrator:
 
         if blocked:
             details = ", ".join(f"{host}:{port}" for host, port in blocked)
+            audit_logger.record(
+                session_id=self._session_id,
+                event="tool_blocked",
+                tool_name=tool_name,
+                args=tool_args,
+                policy_decision="blocked",
+                reason=f"endpoint(s) not allowed: {details}",
+            )
             return False, f"endpoint(s) not allowed: {details}"
 
+        audit_logger.record(
+            session_id=self._session_id,
+            event="tool_allowed",
+            tool_name=tool_name,
+            args=tool_args,
+            policy_decision="allowed",
+            reason="All endpoints permitted by policy",
+        )
         return True, ""
 
     def _handle_aidlc_command(self, user_input: str, console: Any) -> bool:
