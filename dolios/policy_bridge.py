@@ -16,13 +16,13 @@ When Hermes Agent declares a tool that needs network access, the bridge:
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from dolios.io import load_yaml
 from dolios.policy.engine import PolicyEngine
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from dolios.config import DoliosConfig
 
 logger = logging.getLogger(__name__)
@@ -124,6 +124,7 @@ class PolicyBridge:
     def __init__(self, config: DoliosConfig):
         self.config = config
         self._engine = PolicyEngine(config)
+        self._skill_capabilities: dict[str, dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
     # Path exposure — mirrors the old PolicyBridge.generated_dir attribute
@@ -183,10 +184,58 @@ class PolicyBridge:
                 for block_name, block in preset_data.get("network_policies", {}).items():
                     extra[block_name] = block
 
+        # Merge per-skill capability manifests from YAML files
+        caps = self.load_skill_capabilities(skills_dir or Path("skills"))
+        for cap_tool, cap_data in caps.items():
+            domains = cap_data.get("network", {}).get("allow_domains", [])
+            if domains:
+                extra[f"skill_{cap_tool}"] = {
+                    "name": f"skill_{cap_tool}",
+                    "endpoints": [
+                        {
+                            "host": domain,
+                            "port": 443,
+                            "protocol": "rest",
+                            "enforcement": "enforce",
+                            "tls": "terminate",
+                            "rules": [{"allow": {"method": "*", "path": "/**"}}],
+                        }
+                        for domain in domains
+                    ],
+                }
+
         return self._engine.generate_active_policy(
             tier=getattr(self.config.sandbox, "policy_tier", "balanced"),
             extra_tool_policies=extra or None,
         )
+
+    def load_skill_capabilities(self, skills_dir: Path) -> dict[str, dict[str, Any]]:
+        """Load capabilities.yaml from all skill directories."""
+        result: dict[str, dict[str, Any]] = {}
+        try:
+            for skill_dir in sorted(skills_dir.iterdir()):
+                if not skill_dir.is_dir():
+                    continue
+                cap_file = skill_dir / "capabilities.yaml"
+                if not cap_file.exists():
+                    continue
+                try:
+                    data = load_yaml(cap_file)
+                    if data and isinstance(data, dict):
+                        tool_name = data.get("tool", skill_dir.name)
+                        result[tool_name] = data
+                except Exception:
+                    logger.warning(
+                        "Malformed capabilities.yaml in %s — skipping", skill_dir.name
+                    )
+        except FileNotFoundError:
+            pass
+        self._skill_capabilities = result
+        return result
+
+    def get_capabilities_for_tool(self, tool_name: str) -> dict[str, Any] | None:
+        """Return the loaded capability manifest for a tool, or None."""
+        return self._skill_capabilities.get(tool_name)
 
     def check_endpoint(self, host: str, port: int = 443) -> bool:
         """Check if host:port is allowed by the current active policy."""
@@ -197,7 +246,7 @@ class PolicyBridge:
         return TOOL_POLICIES.get(tool_name)
 
     def get_capability(self, tool_name: str) -> dict[str, Any] | None:
-        """Return the capability manifest for a tool, or None."""
+        """Return the static capability manifest for a tool, or None."""
         return CAPABILITY_MANIFESTS.get(tool_name)
 
     def request_endpoint_approval(
