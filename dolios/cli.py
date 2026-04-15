@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 import sys
 from pathlib import Path
 
@@ -56,6 +57,14 @@ cli.add_command(evolve)
 def start(ctx: click.Context) -> None:
     """Start the Dolios interactive agent."""
     from dolios.orchestrator import DoliosOrchestrator
+
+    # SEC-L6: Install SIGTERM handler so container shutdowns (docker stop, k8s eviction)
+    # trigger the same clean shutdown path as Ctrl-C (KeyboardInterrupt).
+    def _handle_sigterm(signum: int, frame: object) -> None:
+        logging.getLogger(__name__).info("SIGTERM received — shutting down gracefully")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, _handle_sigterm)
 
     config = ctx.obj["config"]
     if ctx.obj.get("no_sandbox"):

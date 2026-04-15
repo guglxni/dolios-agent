@@ -32,12 +32,21 @@ def test_single_record_valid_json(tmp_path: Path) -> None:
     assert entry["policy_decision"] == "allowed"
 
 
-def test_args_hash_is_sha256_of_sorted_json() -> None:
+def test_args_hash_is_hmac_sha256_deterministic() -> None:
+    """_args_hash uses HMAC-SHA-256 (not plain SHA-256) and is deterministic within a process."""
     args = {"z": 1, "a": 2}
-    expected = hashlib.sha256(
-        json.dumps(args, sort_keys=True).encode()
-    ).hexdigest()
-    assert _args_hash(args) == expected
+    h = _args_hash(args)
+
+    # Must be a valid 64-char SHA-256 hex digest
+    assert len(h) == 64
+    assert all(c in "0123456789abcdef" for c in h)
+
+    # Must NOT equal plain SHA-256 — verifies HMAC key is in use
+    plain = hashlib.sha256(json.dumps(args, sort_keys=True).encode()).hexdigest()
+    assert h != plain, "_args_hash must use HMAC, not plain SHA-256"
+
+    # Must be deterministic within the same process (same key)
+    assert _args_hash(args) == h
 
 
 def test_args_hash_never_contains_raw_value(tmp_path: Path) -> None:

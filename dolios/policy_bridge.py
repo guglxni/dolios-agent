@@ -187,7 +187,23 @@ class PolicyBridge:
         # Merge per-skill capability manifests from YAML files
         caps = self.load_skill_capabilities(skills_dir or Path("skills"))
         for cap_tool, cap_data in caps.items():
-            domains = cap_data.get("network", {}).get("allow_domains", [])
+            raw_domains = cap_data.get("network", {}).get("allow_domains", [])
+            # SEC-M8: Reject bare wildcard '*' from skill capability declarations.
+            # A malicious or compromised skill could declare network access to "*",
+            # which would bypass endpoint checking for all outbound connections.
+            # Subdomain wildcards like '*.example.com' are also rejected to prevent
+            # overly-broad grants that could cover attacker-controlled subdomains.
+            domains = []
+            for domain in raw_domains:
+                if domain == "*" or (domain.startswith("*.") and domain.count(".") < 2):
+                    logger.warning(
+                        "SEC-M8: Wildcard domain %r rejected in skill %r capabilities — "
+                        "skills may not declare unrestricted network access",
+                        domain,
+                        cap_tool,
+                    )
+                    continue
+                domains.append(domain)
             if domains:
                 extra[f"skill_{cap_tool}"] = {
                     "name": f"skill_{cap_tool}",

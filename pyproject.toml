@@ -29,7 +29,7 @@ dependencies = [
     "dspy>=3.0,<4",
 
     # Hermes Agent CLI framework
-    "fire",
+    "fire>=0.5,<1",
 ]
 
 [project.optional-dependencies]

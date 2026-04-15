@@ -29,6 +29,14 @@ class ToolStatus(StrEnum):
     BLOCKED = "blocked"
 
 
+_MAX_SESSIONS = 1000
+"""Maximum number of concurrent session states to track.
+
+SEC-M7: Prevents unbounded memory growth in long-running deployments.
+When the limit is reached, the oldest session is evicted.
+"""
+
+
 class WorkflowPolicy:
     """Enforces tool ordering via a DAG declared in workflow.yaml."""
 
@@ -111,6 +119,15 @@ class WorkflowPolicy:
     def record_outcome(self, session_id: str, tool_name: str, *, success: bool) -> None:
         """Record tool execution outcome for workflow state tracking."""
         if session_id not in self._sessions:
+            # SEC-M7: Evict oldest session if at capacity to prevent memory leak
+            if len(self._sessions) >= _MAX_SESSIONS:
+                oldest = next(iter(self._sessions))
+                del self._sessions[oldest]
+                logger.warning(
+                    "WorkflowPolicy: session limit (%d) reached, evicted oldest session %r",
+                    _MAX_SESSIONS,
+                    oldest,
+                )
             self._sessions[session_id] = {}
         self._sessions[session_id][tool_name] = ToolStatus.SUCCESS if success else ToolStatus.FAILED
 

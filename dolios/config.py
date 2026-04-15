@@ -9,9 +9,12 @@ Handles loading, validating, and merging config from:
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 def _dolios_home() -> Path:
@@ -152,6 +155,13 @@ class DoliosConfig:
             config.inference.default_model = env_model
         if os.environ.get("DOLIOS_SANDBOX_DISABLED", "").lower() in ("1", "true", "yes"):
             config.sandbox.enabled = False
+            # SEC-M1: Emit a loud warning when sandbox is disabled via env var.
+            # This prevents silent privilege escalation in production deployments.
+            logger.critical(
+                "SECURITY: Sandbox DISABLED via DOLIOS_SANDBOX_DISABLED env var. "
+                "All filesystem, network, and process isolation is bypassed. "
+                "NEVER use this setting in production."
+            )
         if env_tier := os.environ.get("DOLIOS_SANDBOX_TIER"):
             config.sandbox.policy_tier = env_tier
         if env_aidlc_enabled := os.environ.get("DOLIOS_AIDLC_ENABLED"):
@@ -190,6 +200,19 @@ def _merge_yaml(config: DoliosConfig, path: Path) -> None:
         if section_data := data.get(name):
             for k, v in section_data.items():
                 if hasattr(obj, k):
+                    # SEC-M2: Reject type mismatches to prevent type confusion from
+                    # malformed or adversarial YAML config files. If the YAML value's
+                    # type does not match the existing field's type, skip the override.
+                    current = getattr(obj, k)
+                    if v is not None and current is not None and not isinstance(v, type(current)):
+                        logger.warning(
+                            "Config type mismatch for %s.%s: expected %s, got %s — keeping default",
+                            name,
+                            k,
+                            type(current).__name__,
+                            type(v).__name__,
+                        )
+                        continue
                     setattr(obj, k, v)
 
     for key in ("brand_voice", "aidlc_enabled", "aidlc_require_phase_approval", "log_level"):

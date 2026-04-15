@@ -2,11 +2,18 @@
 
 Every tool call decision (allowed, blocked, unknown) and security-relevant
 event is recorded as a single JSON object per line.  Raw argument values
-and credentials are never stored — only a SHA-256 hash of the serialised
-arguments is kept.
+and credentials are never stored — only an HMAC-SHA-256 hash of the
+serialised arguments is kept.
 
 File writes are atomic (write-to-tmp, fsync, rename) with fcntl exclusive
 locking so concurrent processes can safely append to the same log.
+
+Security notes:
+- Rotation happens INSIDE the flock block to prevent TOCTOU races.
+- Up to 5 rotation backups are kept (.1.jsonl through .5.jsonl).
+- Unknown event types raise ValueError rather than being recorded.
+- Log files are created with mode 0600 (owner read/write only).
+- Args hash uses HMAC-SHA-256 for tamper evidence within a process session.
 """
 
 from __future__ import annotations
@@ -14,15 +21,22 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import hashlib
+import hmac
 import json
 import logging
 import os
+import secrets
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Process-local HMAC key — randomly generated at import time, never persisted.
+# Provides tamper-evidence for args hashes within a single process session.
+# Cross-process integrity requires a persisted key (out of scope for this layer).
+_HMAC_KEY: bytes = secrets.token_bytes(32)
 
 _VALID_EVENTS = frozenset(
     {
@@ -33,14 +47,22 @@ _VALID_EVENTS = frozenset(
         "credential_injected",
         "dlp_blocked",
         "workflow_blocked",
+        "injection_blocked",
+        "response_dlp_finding",
     }
 )
 
+_MAX_ROTATION_BACKUPS = 5
+
 
 def _args_hash(args: dict[str, Any]) -> str:
-    """Return SHA-256 hex digest of the canonical JSON representation."""
-    payload = json.dumps(args, sort_keys=True, default=str)
-    return hashlib.sha256(payload.encode()).hexdigest()
+    """Return HMAC-SHA-256 hex digest of the canonical JSON representation.
+
+    Uses a process-local key for tamper-evidence within the session.
+    SEC-L1: HMAC prevents construction of valid hashes for arbitrary inputs.
+    """
+    payload = json.dumps(args, sort_keys=True, default=str).encode()
+    return hmac.new(_HMAC_KEY, payload, hashlib.sha256).hexdigest()
 
 
 class AuditLogger:
@@ -75,7 +97,10 @@ class AuditLogger:
     ) -> None:
         """Append a single audit entry to the log file."""
         if event not in _VALID_EVENTS:
-            logger.warning("Audit: unknown event type %r — recording anyway", event)
+            raise ValueError(
+                f"Unknown audit event type {event!r}. "
+                f"Valid events: {sorted(_VALID_EVENTS)}"
+            )
 
         entry: dict[str, Any] = {
             "ts": datetime.now(UTC).isoformat(),
@@ -93,15 +118,21 @@ class AuditLogger:
         self._append(line)
 
     def _append(self, line: str) -> None:
-        """Atomically append *line* to the audit log with flock protection."""
-        self._log_path.parent.mkdir(parents=True, exist_ok=True)
+        """Atomically append *line* to the audit log with flock protection.
 
-        self._maybe_rotate()
+        Rotation is performed INSIDE the flock to prevent TOCTOU races
+        (SEC-H2): two concurrent processes could both see an oversized log
+        and both rotate, with the second overwriting the first's backup.
+        """
+        self._log_path.parent.mkdir(parents=True, exist_ok=True)
 
         lock_path = self._log_path.with_suffix(".lock")
         with open(lock_path, "w") as lock_fd:
             fcntl.flock(lock_fd, fcntl.LOCK_EX)
             try:
+                # Rotation inside lock — prevents TOCTOU race (SEC-H2)
+                self._maybe_rotate()
+
                 # Write to a temp file, fsync, then append-rename.
                 # Since we need to *append* (not replace), we read existing
                 # content if any, append the new line, then atomically replace.
@@ -122,6 +153,9 @@ class AuditLogger:
                         f.flush()
                         os.fsync(f.fileno())
                     os.replace(tmp_path, str(self._log_path))
+                    # Ensure restrictive permissions on newly created log file (SEC-L5)
+                    with contextlib.suppress(OSError):
+                        os.chmod(str(self._log_path), 0o600)
                 except BaseException:
                     with contextlib.suppress(OSError):
                         os.unlink(tmp_path)
@@ -130,15 +164,33 @@ class AuditLogger:
                 fcntl.flock(lock_fd, fcntl.LOCK_UN)
 
     def _maybe_rotate(self) -> None:
-        """Rotate the log file if it exceeds max_size_bytes."""
+        """Rotate the log file if it exceeds max_size_bytes.
+
+        Keeps up to _MAX_ROTATION_BACKUPS numbered backups (.1.jsonl through
+        .5.jsonl). On each rotation, existing backups shift up by one:
+          .4.jsonl → .5.jsonl, .3.jsonl → .4.jsonl, … .1.jsonl → .2.jsonl
+        then the active log becomes .1.jsonl.
+
+        MUST be called inside the flock block (SEC-H2).
+        """
         try:
             size = self._log_path.stat().st_size
         except FileNotFoundError:
             return
-        if size >= self._max_size_bytes:
-            rotated = self._log_path.with_suffix(".1.jsonl")
-            os.replace(str(self._log_path), str(rotated))
-            logger.info("Audit log rotated → %s", rotated)
+        if size < self._max_size_bytes:
+            return
+
+        # Shift existing backups up (oldest overwritten if at max)
+        for i in range(_MAX_ROTATION_BACKUPS - 1, 0, -1):
+            src = self._log_path.with_suffix(f".{i}.jsonl")
+            dst = self._log_path.with_suffix(f".{i + 1}.jsonl")
+            if src.exists():
+                with contextlib.suppress(OSError):
+                    os.replace(str(src), str(dst))
+
+        rotated = self._log_path.with_suffix(".1.jsonl")
+        os.replace(str(self._log_path), str(rotated))
+        logger.info("Audit log rotated → %s", rotated)
 
 
 # Module-level singleton

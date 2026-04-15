@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
-from dolios.security.audit import audit_logger
+from dolios.security.audit import _args_hash, audit_logger
 from dolios.security.dlp import DLPScanner
 from dolios.security.vault import CredentialVault
 from dolios.security.workflow import WorkflowPolicy
@@ -68,7 +68,7 @@ class DoliosOrchestrator:
         for _name, provider in self.config.inference.providers.items():
             key_env = provider.get("api_key_env", "")
             if key_env:
-                self.vault.load_from_env(key_env, label=key_env)
+                self.vault.load_from_env_optional(key_env, label=key_env)
         self.inference_router: InferenceRouter = InferenceRouter(self.config, vault=self.vault)
         self.brand: BrandLayer = BrandLayer(self.config, self.project_dir)
         self.aidlc: AIDLCEngine = AIDLCEngine(self.config)
@@ -130,13 +130,27 @@ class DoliosOrchestrator:
         return env
 
     def _install_soul_md(self) -> None:
-        """Install Dolios SOUL.md into Hermes home directory."""
+        """Install Dolios SOUL.md into Hermes home directory.
+
+        SEC-L4: SOUL.md is scanned for injection patterns before install.
+        A compromised brand/SOUL.md could inject instructions into the agent's
+        personality. If injection patterns are detected, install is blocked.
+        """
         hermes_home = self.config.home / "hermes"
         hermes_home.mkdir(parents=True, exist_ok=True)
 
         soul_content = self.brand.get_soul_content()
+
+        # Scan SOUL.md for injection patterns before installing as agent personality
+        scanned = self._scan_content_for_injection(soul_content, "SOUL.md")
+        if scanned is None:
+            raise RuntimeError(
+                "SECURITY: SOUL.md blocked — injection patterns detected in brand personality. "
+                "Check brand/SOUL.md for compromised content."
+            )
+
         soul_dest = hermes_home / "SOUL.md"
-        soul_dest.write_text(soul_content)
+        soul_dest.write_text(scanned)
         logger.info(f"Installed SOUL.md → {soul_dest}")
 
     @staticmethod
@@ -311,7 +325,10 @@ class DoliosOrchestrator:
         route = self._active_route
         env_vars = self._setup_hermes_env(route)
         # Hermes Agent reads os.environ in-process, so we set the vars here.
-        # Only set Dolios-owned keys — never delete existing keys (CQ-H2).
+        # SEC-H1: API keys are set in os.environ because Hermes requires in-process
+        # access. They are cleaned up in the finally block below after the session ends.
+        # This minimizes the exposure window to the agent session duration only.
+        injected_keys = list(env_vars.keys())
         for key, value in env_vars.items():
             os.environ[key] = value
         # SEC-A09-L1: Log env setup without exposing API keys
@@ -325,6 +342,9 @@ class DoliosOrchestrator:
             agent = self.runtime.create_agent(
                 route,
                 max_iterations=90,
+                # SEC-C1: Policy guard wiring:
+                # fusion_runtime.create_agent → hermes_adapter.create_agent → policy_guard
+                # The guard is called on every tool dispatch before execution.
                 policy_guard=self._policy_guard_tool_call,
             )
         except ImportError:
@@ -351,6 +371,15 @@ class DoliosOrchestrator:
         except KeyboardInterrupt:
             logger.info("Session interrupted by user")
         finally:
+            # SEC-H1: Remove API keys from os.environ after session ends.
+            # Minimizes exposure window to active session duration only.
+            sensitive_keys = {
+                k for k in injected_keys if "KEY" in k or "SECRET" in k or "TOKEN" in k
+            }
+            for key in sensitive_keys:
+                os.environ.pop(key, None)
+            if sensitive_keys:
+                logger.debug("Cleaned up %d credential(s) from os.environ", len(sensitive_keys))
             self.runtime.end_trace(self._session_id, outcome="completed")
             logger.info("Trace saved for evolution pipeline")
 
@@ -416,11 +445,13 @@ class DoliosOrchestrator:
             port = int(endpoint.get("port", 443))
             if not self.policy_bridge.check_endpoint(host, port):
                 blocked.append((host, port))
+                # SEC-M3: Store args hash, not plaintext args, in the approvals file.
+                # Tool args may contain credentials, PII, or sensitive file paths.
                 self.policy_bridge.request_endpoint_approval(
                     host=host,
                     port=port,
                     tool_name=tool_name,
-                    reason=f"Tool call blocked by policy guard. args={tool_args}",
+                    reason=f"Tool call blocked by policy guard. args_hash={_args_hash(tool_args)}",
                 )
 
         if blocked:
@@ -498,15 +529,22 @@ class DoliosOrchestrator:
         """Run the Hermes Agent interactive conversation loop.
 
         This wraps the agent's chat method with Dolios-specific hooks:
-        - Pre-tool-call: policy bridge check
-        - Post-tool-call: trace collection
+        - Pre-message: injection scanning (SEC-C2)
+        - Pre-tool-call: policy bridge check (SEC-C1)
+        - Post-call: DLP scan on response (SEC-H7/SEC-M5)
+        - Post-call: trace collection
         - AI-DLC phase detection on user messages
+        - Circuit breaker on consecutive failures (SEC-M12)
         """
         from rich.console import Console
         from rich.prompt import Prompt
 
         console = Console()
         self.workflow_policy.reset_session(self._session_id)
+
+        # SEC-M12: Circuit breaker — break after this many consecutive failures
+        max_consecutive_failures = 5
+        _consecutive_failures = 0
 
         console.print("[bold blue]Δ Dolios[/bold blue] ready. Type your message.\n")
 
@@ -523,6 +561,24 @@ class DoliosOrchestrator:
                 break
 
             if self._handle_aidlc_command(user_input, console):
+                continue
+
+            # SEC-C2: Scan user input for prompt injection before sending to agent.
+            # Defense-in-depth — not a complete injection prevention layer.
+            if self._scan_content_for_injection(user_input, "user_message") is None:
+                audit_logger.record(
+                    session_id=self._session_id,
+                    event="injection_blocked",
+                    tool_name="user_input",
+                    args={},
+                    policy_decision="blocked",
+                    reason="User message matched injection pattern",
+                )
+                console.print(
+                    "\n[yellow]SECURITY:[/yellow] Message blocked — contains patterns "
+                    "that match known prompt injection techniques. "
+                    "Please rephrase your request.\n"
+                )
                 continue
 
             # Detect AI-DLC phase from user intent
@@ -543,25 +599,68 @@ class DoliosOrchestrator:
                     continue
 
             # Send to Hermes Agent
-            # NOTE: Pre-dispatch policy checks cannot be injected here without
-            # modifying vendor AIAgent internals. Real enforcement happens at
-            # the sandbox/network level via NemoClaw policies. We log a
-            # post-call trace event for evolution pipeline visibility.
+            # SEC-C1: Policy guard wiring confirmed — _policy_guard_tool_call is
+            # passed to create_agent() and called on every tool dispatch.
+            # Real enforcement also happens at the sandbox/network level via NemoClaw.
             try:
-                # Run synchronous vendor call off the event loop (CQ-H1)
-                response = await asyncio.to_thread(agent.chat, user_input)
+                # SEC-M13: 300s per-call timeout prevents runaway agent calls
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(agent.chat, user_input),
+                    timeout=300.0,
+                )
+
+                # SEC-H7/SEC-M5: Scan agent response for sensitive data before display
+                if response and self.dlp_scanner.is_enabled():
+                    resp_clean, resp_findings = self.dlp_scanner.scan(
+                        "agent_response", {"response": response}
+                    )
+                    if not resp_clean:
+                        for finding in resp_findings:
+                            logger.warning(
+                                "SECURITY: DLP finding in agent response — "
+                                "category=%s field=%s",
+                                finding.pattern_category,
+                                finding.field_path,
+                            )
+                            audit_logger.record(
+                                session_id=self._session_id,
+                                event="response_dlp_finding",
+                                tool_name="agent_response",
+                                args={},
+                                policy_decision="logged",
+                                reason="Sensitive pattern detected in agent response",
+                                extra={
+                                    "category": finding.pattern_category,
+                                    "field": finding.field_path,
+                                },
+                            )
+
                 if response:
                     console.print(f"\n[bold blue]Δ[/bold blue] {response}\n")
-                # Record successful tool outcome for workflow DAG tracking
+
+                # Record successful outcome and reset failure counter
                 self.workflow_policy.record_outcome(
                     self._session_id,
                     "agent_chat",
                     success=True,
                 )
+                _consecutive_failures = 0
+
+            except TimeoutError:
+                logger.error("Agent call timed out after 300s")
+                _consecutive_failures += 1
+                console.print(
+                    "\n[red]Request timed out after 5 minutes. "
+                    "The agent may be stuck — try a simpler request.[/red]\n"
+                )
+                self.workflow_policy.record_outcome(
+                    self._session_id, "agent_chat", success=False
+                )
             except Exception as e:
                 # Log full error internally, show sanitized message to user
                 # (OWASP A10:2025 — Mishandling of Exceptional Conditions)
                 logger.error(f"Agent error: {e}", exc_info=True)
+                _consecutive_failures += 1
                 self.workflow_policy.record_outcome(
                     self._session_id,
                     "agent_chat",
@@ -571,6 +670,20 @@ class DoliosOrchestrator:
                     "\n[red]An error occurred processing your request. "
                     "Check logs for details.[/red]\n"
                 )
+
+            # SEC-M12: Circuit breaker — stop after repeated failures
+            if _consecutive_failures >= max_consecutive_failures:
+                logger.error(
+                    "Circuit breaker tripped: %d consecutive agent failures",
+                    _consecutive_failures,
+                )
+                console.print(
+                    f"\n[bold red]SECURITY: Circuit breaker tripped[/bold red] — "
+                    f"{_consecutive_failures} consecutive failures. "
+                    "Session terminated to prevent runaway errors. "
+                    "Check logs for details.\n"
+                )
+                break
 
     async def stop(self) -> None:
         """Gracefully stop the agent and sandbox."""

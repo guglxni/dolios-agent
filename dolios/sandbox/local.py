@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import shlex
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -120,8 +121,11 @@ class LocalBackend(SandboxBackend):
         logger.debug("LOCAL EXEC cwd=%s cmd=%s", cwd, command)
 
         try:
-            proc = await asyncio.create_subprocess_shell(
-                command,
+            # SEC-C3: Use create_subprocess_exec (not shell=True) to prevent shell
+            # injection. shlex.split tokenises the command without invoking a shell.
+            args = shlex.split(command)
+            proc = await asyncio.create_subprocess_exec(
+                *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=cwd,

@@ -76,6 +76,16 @@ def validate_ssrf(url: str) -> str:
 
     This is the single authoritative SSRF check for the codebase.
     ``environments/nemoclaw_helpers.validate_endpoint_url`` delegates here.
+
+    SEC-H5 / SEC-M11 — DNS Rebinding Limitation:
+    This check resolves DNS at validation time. An attacker controlling a DNS
+    record could pass validation with a public IP, then switch the record to a
+    private IP before the actual HTTP request is made (DNS rebinding / TOCTOU).
+    Full protection requires the HTTP client to pin the resolved IP address from
+    this call and refuse to re-resolve at request time.  For the current
+    development-mode LocalBackend this is an accepted risk documented here.
+    Production deployments should use a DNS-pinning HTTP client or an egress
+    proxy that enforces IP allowlists at the network layer.
     """
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https"):

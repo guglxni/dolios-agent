@@ -31,25 +31,30 @@ def _redact(value: str) -> str:
 
 
 # (category, compiled regex)
+# SEC-M6: All patterns use bounded, non-backtracking-prone constructs.
 _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     (
         "PRIVATE_KEY",
-        re.compile(r"-----BEGIN\s[A-Z\s]*PRIVATE\sKEY-----"),
+        re.compile(r"-----BEGIN\s[A-Z ]{0,20}PRIVATE\sKEY-----"),
     ),
     (
         "CREDENTIAL",
+        # SEC-M6: Original pattern had (?:\w+\s){0,3} which could cause
+        # catastrophic backtracking. Replaced with a simpler, bounded pattern
+        # that matches keyword + separator + long token without lookahead groups.
         re.compile(
-            r"(?:key|token|secret|api|auth)[\s=:\"']{0,10}(?:\w+\s){0,3}([A-Za-z0-9_\-]{20,})",
+            r"(?:key|token|secret|api|auth)[\s=:\"']{0,10}[A-Za-z0-9_\-]{20,}",
             re.IGNORECASE,
         ),
     ),
     (
         "ENV_LEAK",
-        re.compile(r"(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[=]\S+"),
+        re.compile(r"(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)[=]\S{1,200}"),
     ),
     (
         "AADHAAR",
-        re.compile(r"\b\d{4}\s\d{4}\s\d{4}\b"),
+        # Matches both space-separated (1234 5678 9012) and compact (123456789012)
+        re.compile(r"\b\d{4}[\s]?\d{4}[\s]?\d{4}\b"),
     ),
     (
         "PAN",
@@ -57,7 +62,7 @@ _PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ),
     (
         "PII_EMAIL",
-        re.compile(r"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b"),
+        re.compile(r"\b[A-Za-z0-9._%+\-]{1,64}@[A-Za-z0-9.\-]{1,255}\.[A-Za-z]{2,}\b"),
     ),
     (
         "PII_PHONE",
@@ -102,6 +107,10 @@ class DLPScanner:
     ) -> None:
         if isinstance(value, str):
             self._scan_string(value, path, findings, allowed)
+        elif isinstance(value, bytes):
+            # SEC-H3: bytes values were previously skipped — a bypass vector.
+            # Decode to str (replacing invalid sequences) before scanning.
+            self._scan_string(value.decode("utf-8", errors="replace"), path, findings, allowed)
         elif isinstance(value, dict):
             for k, v in cast("dict[str, Any]", value).items():
                 child: str = f"{path}.{k}" if path else k

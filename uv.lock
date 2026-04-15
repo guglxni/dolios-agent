@@ -678,7 +678,7 @@ requires-dist = [
     { name = "dspy", specifier = ">=3.0,<4" },
     { name = "dspy", marker = "extra == 'evolution'", specifier = ">=3.0" },
     { name = "fal-client", marker = "extra == 'optional-tools'" },
-    { name = "fire" },
+    { name = "fire", specifier = ">=0.5,<1" },
     { name = "firecrawl-py", marker = "extra == 'optional-tools'" },
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "jinja2", marker = "extra == 'hermes'" },

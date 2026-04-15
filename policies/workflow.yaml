@@ -10,17 +10,41 @@
 #                                # "any"     = must have run (pass or fail)
 #       description: "why this ordering is required"
 #
-# Example:
-#   policies:
-#     - tool: "deploy_production"
-#       requires:
-#         - tool: "run_tests"
-#           status: "success"
-#         - tool: "security_scan"
-#           status: "success"
-#       description: "production deploy requires passing tests and security scan"
+# Security gates below enforce safe tool ordering as a defence-in-depth layer.
+# Operators can add, remove, or extend these rules to suit their deployment.
 #
-# An empty policies list means no ordering constraints — all tools are permitted.
+# SEC-H4: Default workflow policy ships with security-oriented ordering gates
+# to prevent unsafe tool sequences (e.g. sending email before reading it, or
+# publishing evolved skills without first running tests).
 
 version: "1.0"
-policies: []
+policies:
+  # Prevent publishing evolved skills without first verifying them
+  - tool: "evolve_publish"
+    requires:
+      - tool: "evolve_verify"
+        status: "success"
+    description: "Skill publishing requires successful verification step"
+
+  # Prevent code execution without a preceding security scan (if scan is available)
+  - tool: "execute_code"
+    requires:
+      - tool: "security_scan"
+        status: "success"
+    description: "Code execution should be preceded by a security scan"
+
+  # Prevent outbound email without prior read (guard against confused-deputy attacks)
+  - tool: "email_send"
+    requires:
+      - tool: "email_read"
+        status: "success"
+    description: "Email send requires prior read to confirm correct context"
+
+  # Prevent production deploy without tests and security scan passing
+  - tool: "deploy_production"
+    requires:
+      - tool: "run_tests"
+        status: "success"
+      - tool: "security_scan"
+        status: "success"
+    description: "Production deploy requires passing tests and security scan"

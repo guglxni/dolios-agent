@@ -238,7 +238,10 @@ class PolicyEngine:
             base_url = provider.get("base_url", "")
             if not base_url:
                 continue
-            if "localhost" in base_url or "host.docker.internal" in base_url:
+            # SEC-M4: Check all localhost variants — "localhost", "127.0.0.1", "::1",
+            # and "host.docker.internal" must not be auto-registered as policy endpoints.
+            _local_markers = ("localhost", "127.0.0.1", "::1", "host.docker.internal")
+            if any(m in base_url for m in _local_markers):
                 continue
 
             parsed = urlparse(base_url)

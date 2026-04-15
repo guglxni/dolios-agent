@@ -15,8 +15,11 @@ def test_clean_args():
 
 
 def test_api_key_detected():
+    # The safe CREDENTIAL regex matches keyword + separator + 20+ char token.
+    # "secret: <token>" is the canonical form; the old "api key is ..." prose
+    # style used a ReDoS-prone pattern (SEC-M6) that has been replaced.
     clean, findings = _scanner().scan(
-        "tool", {"data": "my api key is sk-abcdefghij1234567890"}
+        "tool", {"data": "secret: sk-abcdefghij1234567890"}
     )
     assert clean is False
     assert any(f.pattern_category == "CREDENTIAL" for f in findings)
