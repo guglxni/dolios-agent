@@ -68,3 +68,4 @@ vendor/
 # Local-only internal security review artifacts
 CODEBASE-REVIEW.md
 SECURITY-AUDIT.md
+repomix-output.xml
