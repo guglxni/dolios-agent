@@ -27,6 +27,9 @@ dependencies = [
 
     # Self-evolution
     "dspy>=3.0,<4",
+
+    # Hermes Agent CLI framework
+    "fire",
 ]
 
 [project.optional-dependencies]
@@ -36,7 +39,6 @@ hermes = [
     "tenacity",
     "jinja2",
     "prompt_toolkit",
-    "fire",
     "platformdirs",
 ]
 nemoclaw = [
