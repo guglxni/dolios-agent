@@ -1,6 +1,6 @@
 [project]
 name = "dolios"
-version = "0.2.1"
+version = "0.3.0"
 description = "The Crafty Agent — self-improving, sandboxed, methodology-aware agentic AI"
 readme = "README.md"
 license = "MIT"
@@ -24,6 +24,9 @@ dependencies = [
 
     # Self-evolution
     "dspy>=3.0,<4",
+
+    # Hermes Agent CLI framework
+    "fire",
 ]
 
 [project.optional-dependencies]
@@ -33,7 +36,6 @@ hermes = [
     "tenacity",
     "jinja2",
     "prompt_toolkit",
-    "fire",
     "platformdirs",
 ]
 nemoclaw = [

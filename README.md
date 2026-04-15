@@ -138,6 +138,20 @@ uv sync --extra optional-tools  # Enable optional Firecrawl/FAL-backed tool inte
 
 ---
 
+## Releases
+
+| Version | Branch | Date | Highlights |
+|---------|--------|------|------------|
+| [v0.3.0-hardened](https://github.com/guglxni/dolios-agent/releases/tag/v0.3.0-hardened) | `hardened` | Apr 2026 | IronClaw security layer — AuditLogger, WorkflowPolicy DAG, CredentialVault, DLPScanner, per-tool capability manifests |
+| [v0.3.0](https://github.com/guglxni/dolios-agent/releases/tag/v0.3.0) | `main` | Apr 2026 | Native fusion runtime — PolicyEngine reads vendor NemoClaw YAML directly, SandboxBackend ABC with full plan/apply/execute lifecycle, 131 tests |
+| [v0.2.1](https://github.com/guglxni/dolios-agent/releases/tag/v0.2.1) | `main` | Apr 2026 | Full OWASP Top 10 + Agentic AI Security audit — 9 security fixes, 10 code quality fixes, CI green |
+| [v0.2.0](https://github.com/guglxni/dolios-agent/releases/tag/v0.2.0) | `main` | Apr 2026 | Native Fusion Runtime and Production Gates |
+| [v0.1.0](https://github.com/guglxni/dolios-agent/releases/tag/v0.1.0) | `main` | Mar 2026 | Initial release — brand, architecture, AI-DLC methodology |
+
+The `hardened` branch tracks `main` and layers IronClaw-inspired security enhancements on top. It is kept separate and rebased onto `main` as the baseline evolves.
+
+---
+
 ## Self-Evolution
 
 Dolios integrates the [hermes-agent-self-evolution](https://github.com/NousResearch/hermes-agent-self-evolution) pipeline for continuous skill improvement. No GPU required; runs via API calls at ~$2-10 per optimization cycle.

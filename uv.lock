@@ -514,11 +514,12 @@ wheels = [
 
 [[package]]
 name = "dolios"
-version = "0.2.1"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
     { name = "dspy" },
+    { name = "fire" },
     { name = "httpx" },
     { name = "litellm" },
     { name = "openai" },
@@ -534,7 +535,6 @@ all = [
     { name = "discord-py" },
     { name = "dspy" },
     { name = "fal-client" },
-    { name = "fire" },
     { name = "firecrawl-py" },
     { name = "jinja2" },
     { name = "platformdirs" },
@@ -563,7 +563,6 @@ evolution = [
 ]
 hermes = [
     { name = "anthropic" },
-    { name = "fire" },
     { name = "jinja2" },
     { name = "platformdirs" },
     { name = "prompt-toolkit" },
@@ -591,7 +590,7 @@ requires-dist = [
     { name = "dspy", specifier = ">=3.0,<4" },
     { name = "dspy", marker = "extra == 'evolution'", specifier = ">=3.0" },
     { name = "fal-client", marker = "extra == 'optional-tools'" },
-    { name = "fire", marker = "extra == 'hermes'" },
+    { name = "fire" },
     { name = "firecrawl-py", marker = "extra == 'optional-tools'" },
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "jinja2", marker = "extra == 'hermes'" },
