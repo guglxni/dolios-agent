@@ -1,0 +1,9 @@
+version: "1.0"
+tool: "policy-request"
+network:
+  allow_domains: []
+filesystem:
+  read: []
+  write:
+    - ~/.dolios/pending_approvals.yaml
+description: "Writes endpoint approval requests — no network access required"

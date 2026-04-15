@@ -1,0 +1,9 @@
+version: "1.0"
+tool: "evolution-report"
+network:
+  allow_domains: []
+filesystem:
+  read:
+    - ~/.dolios/traces/
+  write: []
+description: "Reads execution traces for evolution reporting — no network access"

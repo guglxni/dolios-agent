@@ -1,0 +1,9 @@
+version: "1.0"
+tool: "sandbox-status"
+network:
+  allow_domains: []
+filesystem:
+  read:
+    - /sandbox/status
+  write: []
+description: "Reads sandbox state and health — no network access required"

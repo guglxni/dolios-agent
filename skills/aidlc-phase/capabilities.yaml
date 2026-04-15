@@ -1,0 +1,8 @@
+version: "1.0"
+tool: "aidlc-phase"
+network:
+  allow_domains: []
+filesystem:
+  read: []
+  write: []
+description: "Reports AI-DLC phase — no network or filesystem access required"

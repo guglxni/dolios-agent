@@ -1,0 +1,8 @@
+version: "1.0"
+tool: "model-switch"
+network:
+  allow_domains: []
+filesystem:
+  read: []
+  write: []
+description: "Switches inference provider — no direct network or filesystem access"

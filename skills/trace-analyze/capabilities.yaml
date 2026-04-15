@@ -1,0 +1,9 @@
+version: "1.0"
+tool: "trace-analyze"
+network:
+  allow_domains: []
+filesystem:
+  read:
+    - ~/.dolios/traces/
+  write: []
+description: "Reads execution traces for failure analysis — no network access"

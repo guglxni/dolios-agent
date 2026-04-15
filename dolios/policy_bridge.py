@@ -78,6 +78,45 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
     },
 }
 
+# ---------------------------------------------------------------------------
+# Per-tool capability manifests (IronClaw-inspired)
+# Declare the broader capability surface each tool requires beyond endpoints.
+# Used by the orchestrator to enforce least-privilege at dispatch time.
+# ---------------------------------------------------------------------------
+
+CAPABILITY_MANIFESTS: dict[str, dict[str, Any]] = {
+    "web_search": {
+        "network": True,
+        "filesystem": [],
+        "description": "Query external search APIs (Google, Brave)",
+    },
+    "github": {
+        "network": True,
+        "filesystem": [],
+        "description": "Access GitHub REST API for repo operations",
+    },
+    "browser": {
+        "network": True,
+        "filesystem": ["/tmp"],
+        "description": "Full browser access including arbitrary URLs",
+    },
+    "web_fetch": {
+        "network": True,
+        "filesystem": [],
+        "description": "Fetch content from arbitrary HTTPS endpoints",
+    },
+    "image_generation": {
+        "network": True,
+        "filesystem": ["/tmp"],
+        "description": "Generate images via fal.run API",
+    },
+    "email": {
+        "network": True,
+        "filesystem": [],
+        "description": "Read and send email via Gmail API",
+    },
+}
+
 
 class PolicyBridge:
     """Facade over PolicyEngine for Hermes Agent tool policy management."""
@@ -108,6 +147,7 @@ class PolicyBridge:
         self,
         enabled_tools: list[str] | None = None,
         enabled_messaging: list[str] | None = None,
+        skills_dir: Path | None = None,
     ) -> Path:
         """Generate the active NemoClaw-format policy YAML.
 
@@ -155,6 +195,10 @@ class PolicyBridge:
     def get_policy_for_tool(self, tool_name: str) -> dict[str, Any] | None:
         """Return the endpoint declarations for a specific tool, or None."""
         return TOOL_POLICIES.get(tool_name)
+
+    def get_capability(self, tool_name: str) -> dict[str, Any] | None:
+        """Return the capability manifest for a tool, or None."""
+        return CAPABILITY_MANIFESTS.get(tool_name)
 
     def request_endpoint_approval(
         self, host: str, port: int, tool_name: str, reason: str
