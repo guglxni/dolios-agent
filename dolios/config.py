@@ -36,6 +36,7 @@ class SandboxConfig:
     blueprint_version: str = "0.1.0"
     policy_file: str = "policies/dolios-default.yaml"
     openshell_path: str | None = None
+    policy_tier: str = "balanced"  # restricted | balanced | open
 
 
 @dataclass
@@ -124,6 +125,8 @@ class DoliosConfig:
             config.inference.default_model = env_model
         if os.environ.get("DOLIOS_SANDBOX_DISABLED", "").lower() in ("1", "true", "yes"):
             config.sandbox.enabled = False
+        if env_tier := os.environ.get("DOLIOS_SANDBOX_TIER"):
+            config.sandbox.policy_tier = env_tier
         if env_aidlc_enabled := os.environ.get("DOLIOS_AIDLC_ENABLED"):
             parsed = _parse_bool(env_aidlc_enabled)
             if parsed is not None:

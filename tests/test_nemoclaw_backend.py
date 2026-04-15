@@ -32,11 +32,8 @@ def testvalidate_endpoint_url_no_hostname():
 
 
 def test_plan_creates_state(tmp_path, monkeypatch):
-    # Point state dir to tmp
-    monkeypatch.setattr(
-        "environments.nemoclaw_backend.STATE_DIR_BASE",
-        tmp_path / "runs",
-    )
+    # Point state dir to tmp — STATE_DIR_BASE is a global in dolios.sandbox.backend
+    monkeypatch.setattr("dolios.sandbox.backend.STATE_DIR_BASE", tmp_path / "runs")
 
     config = DoliosConfig()
     backend = NemoClawBackend(config)
@@ -61,7 +58,7 @@ def test_plan_creates_state(tmp_path, monkeypatch):
         },
     }
 
-    with patch.object(backend, "_load_blueprint", return_value=blueprint):
+    with patch.object(backend._backend, "_load_blueprint", return_value=blueprint):
         plan = backend.plan(dry_run=True)
 
     assert plan.run_id.startswith("dolios-")

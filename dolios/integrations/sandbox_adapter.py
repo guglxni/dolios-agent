@@ -4,17 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from environments.nemoclaw_backend import NemoClawBackend
+from dolios.sandbox.backend import create_backend
 
 if TYPE_CHECKING:
     from dolios.config import DoliosConfig
+    from dolios.sandbox.backend import SandboxBackend
 
 
 class SandboxRuntimeAdapter:
-    """Adapter around the Dolios NemoClaw backend implementation."""
+    """Adapter that wraps the Dolios sandbox backend for the fusion runtime."""
 
     def __init__(self, config: DoliosConfig):
-        self._backend = NemoClawBackend(config)
+        self._backend: SandboxBackend = create_backend(config)
 
     async def start(self) -> None:
         await self._backend.start()

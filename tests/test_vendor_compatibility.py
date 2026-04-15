@@ -34,6 +34,7 @@ def test_hermes_surface_snapshot_keys():
     reason="hermes-agent repo not synced",
 )
 def test_hermes_aiagent_constructor_contract():
+    pytest.importorskip("fire", reason="fire package not installed in this env")
     ensure_vendor_on_path()
     from run_agent import AIAgent
 
@@ -46,6 +47,7 @@ def test_hermes_aiagent_constructor_contract():
     reason="hermes-agent repo not synced",
 )
 def test_hermes_aiagent_chat_method_present():
+    pytest.importorskip("fire", reason="fire package not installed in this env")
     ensure_vendor_on_path()
     from run_agent import AIAgent
 
