@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from dolios.config import DoliosConfig
+    from dolios.security.vault import CredentialVault
 
 logger = logging.getLogger(__name__)
 
@@ -121,8 +122,9 @@ class InferenceRoute:
 class InferenceRouter:
     """Routes inference requests to the optimal provider."""
 
-    def __init__(self, config: DoliosConfig):
+    def __init__(self, config: DoliosConfig, vault: CredentialVault | None = None):
         self.config = config
+        self._vault = vault
         self._configured = False
         self._available_providers: list[str] = []
 
@@ -189,11 +191,18 @@ class InferenceRouter:
     def _build_route(self, provider_name: str, reason: str) -> InferenceRoute:
         provider = self.config.inference.providers.get(provider_name, {})
         api_key_env = provider.get("api_key_env", "")
+        # Prefer vault if available, fall back to os.environ for backward compat
+        if api_key_env and self._vault and self._vault.has(api_key_env):
+            api_key = self._vault.inject(api_key_env)
+        elif api_key_env:
+            api_key = os.environ.get(api_key_env, "")
+        else:
+            api_key = ""
         return InferenceRoute(
             provider=provider_name,
             model=provider.get("model", self.config.inference.default_model),
             base_url=provider.get("base_url", ""),
-            api_key=os.environ.get(api_key_env, "") if api_key_env else "",
+            api_key=api_key,
             score=0.0,
             reason=reason,
         )

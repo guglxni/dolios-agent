@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 from dolios.config import DoliosConfig
 from dolios.security.audit import audit_logger
+from dolios.security.vault import CredentialVault
 from dolios.security.workflow import WorkflowPolicy
 
 if TYPE_CHECKING:
@@ -62,7 +63,12 @@ class DoliosOrchestrator:
         from dolios.policy_bridge import PolicyBridge
 
         self.policy_bridge: PolicyBridge = PolicyBridge(self.config)
-        self.inference_router: InferenceRouter = InferenceRouter(self.config)
+        self.vault = CredentialVault()
+        for _name, provider in self.config.inference.providers.items():
+            key_env = provider.get("api_key_env", "")
+            if key_env:
+                self.vault.load_from_env(key_env, label=key_env)
+        self.inference_router: InferenceRouter = InferenceRouter(self.config, vault=self.vault)
         self.brand: BrandLayer = BrandLayer(self.config, self.project_dir)
         self.aidlc: AIDLCEngine = AIDLCEngine(self.config)
         self.runtime: DoliosFusionRuntime = DoliosFusionRuntime(self.config)
@@ -84,13 +90,31 @@ class DoliosOrchestrator:
         safe_system_keys = {"PATH", "HOME", "USER", "LANG", "TERM", "SHELL", "TMPDIR"}
         env = {k: v for k, v in os.environ.items() if k in safe_system_keys}
 
+        # Resolve API key: prefer vault injection, fall back to route value
+        api_key_env = self.config.inference.providers.get(
+            route.provider, {},
+        ).get("api_key_env", "")
+        if api_key_env and self.vault.has(api_key_env):
+            api_key = self.vault.inject(api_key_env)
+            audit_logger.record(
+                session_id=self._session_id,
+                event="credential_injected",
+                tool_name="hermes_env",
+                args={},
+                policy_decision="injected",
+                reason="Vault boundary injection for Hermes env",
+                extra={"label": api_key_env},
+            )
+        else:
+            api_key = route.api_key
+
         # Add Hermes Agent config
         env.update(
             {
                 "HERMES_HOME": str(self.config.home / "hermes"),
                 # Inference routing — Hermes uses OpenAI-compatible env vars
                 "OPENAI_API_BASE": route.base_url,
-                "OPENAI_API_KEY": route.api_key,
+                "OPENAI_API_KEY": api_key,
                 "DEFAULT_MODEL": route.model,
                 # Terminal environment
                 "TERMINAL_ENV": "docker" if self.config.sandbox.enabled else "local",
