@@ -21,7 +21,25 @@ Periodically merge main INTO this branch to pull base improvements:
 Never merge hardened into main.
 
 ## New modules (dolios/security/)
-- dolios/security/audit.py — AuditLogger
-- dolios/security/vault.py — CredentialVault
-- dolios/security/dlp.py — DLPScanner
-- dolios/security/workflow.py — WorkflowPolicy
+
+- **dolios/security/audit.py** — `AuditLogger`: append-only JSON-lines audit trail
+  with atomic writes, fcntl locking, SHA-256 argument hashing, and log rotation.
+- **dolios/security/vault.py** — `CredentialVault`: Fernet-encrypted in-memory
+  secret store. Keys loaded from env vars at startup and cleared from os.environ.
+- **dolios/security/workflow.py** — `WorkflowPolicy`: DAG-based tool ordering
+  enforcement loaded from policies/workflow.yaml. Per-session state tracking.
+- **dolios/security/dlp.py** — `DLPScanner`: regex-based outbound argument
+  scanner detecting credentials, PII (email, phone, Aadhaar, PAN), private keys,
+  and env variable leaks before tool dispatch.
+
+## New config sections (dolios/config.py)
+
+- `AuditConfig` — enabled, log_path, max_size_mb
+- `WorkflowConfig` — enabled, policy_file
+- `DLPConfig` — enabled
+
+## Per-tool capability manifests (skills/*/capabilities.yaml)
+
+Each skill declares its network, filesystem, and DLP allowances in a
+capabilities.yaml manifest. PolicyBridge merges these into the generated
+NemoClaw policy at startup.
