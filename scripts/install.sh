@@ -54,7 +54,7 @@ else
 fi
 
 # Step 3: Clone Dolios
-INSTALL_DIR="${DOLIOS_INSTALL_DIR:-$HOME/dolios}"
+INSTALL_DIR="${DOLIOS_INSTALL_DIR:-$HOME/dolios-agent}"
 
 if [ -d "$INSTALL_DIR" ]; then
     info "Updating existing installation at $INSTALL_DIR..."
@@ -62,7 +62,7 @@ if [ -d "$INSTALL_DIR" ]; then
     git pull --ff-only 2>/dev/null || true
 else
     info "Cloning Dolios..."
-    git clone https://github.com/dolios-agent/dolios.git "$INSTALL_DIR"
+    git clone https://github.com/guglxni/dolios-agent.git "$INSTALL_DIR"
     cd "$INSTALL_DIR"
 fi
 
@@ -95,11 +95,30 @@ ok "Dependencies installed"
 mkdir -p "$HOME/.dolios/traces"
 ok "Created ~/.dolios"
 
+# Step 7: Add dolios to PATH via shell wrapper
+WRAPPER="$HOME/.local/bin/dolios"
+mkdir -p "$HOME/.local/bin"
+cat > "$WRAPPER" <<EOF
+#!/usr/bin/env bash
+exec "$INSTALL_DIR/.venv/bin/python" -m dolios.cli "\$@"
+EOF
+chmod +x "$WRAPPER"
+
+# Add ~/.local/bin to PATH in shell rc if not already present
+for RC in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    if [ -f "$RC" ] && ! grep -q '\.local/bin' "$RC"; then
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$RC"
+        dim "Added ~/.local/bin to PATH in $RC"
+    fi
+done
+export PATH="$HOME/.local/bin:$PATH"
+ok "dolios command installed to ~/.local/bin/dolios"
+
 echo ""
 ok "Dolios installed successfully!"
 echo ""
 echo -e "  ${DOLIOS_DIM}Next steps:${DOLIOS_NC}"
-echo -e "  ${DOLIOS_BLUE}cd $INSTALL_DIR${DOLIOS_NC}"
+echo -e "  ${DOLIOS_BLUE}source ~/.bashrc${DOLIOS_NC}  ${DOLIOS_DIM}# reload shell (or: source ~/.zshrc)${DOLIOS_NC}"
 echo -e "  ${DOLIOS_BLUE}dolios setup${DOLIOS_NC}     ${DOLIOS_DIM}# Configure providers${DOLIOS_NC}"
 echo -e "  ${DOLIOS_BLUE}dolios${DOLIOS_NC}            ${DOLIOS_DIM}# Start the agent${DOLIOS_NC}"
 echo -e "  ${DOLIOS_BLUE}dolios doctor${DOLIOS_NC}     ${DOLIOS_DIM}# Check installation${DOLIOS_NC}"
