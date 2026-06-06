@@ -1,6 +1,6 @@
-synced_at: '2026-04-14T18:18:02.955538+00:00'
+synced_at: '2026-06-06T07:16:29.241392+00:00'
 source_repo: https://github.com/awslabs/aidlc-workflows.git
-source_sha: 182b6e9edcbfca5357987ed22dccc8582ee52288
-version: 0.1.7
-files_synced: 29
-source_root: /Users/aaryanguglani/Downloads/dolios-agent/vendor/aidlc-workflows/aidlc-rules/aws-aidlc-rule-details
+source_sha: 0554ef2d83b13dd3b5b74ba038d649cc8d9b0310
+version: 0.1.8
+files_synced: 31
+source_root: vendor/aidlc-workflows/aidlc-rules/aws-aidlc-rule-details

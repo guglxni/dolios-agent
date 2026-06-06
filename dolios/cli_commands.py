@@ -29,6 +29,7 @@ def upstream_status(include_aidlc: bool, refresh_remote: bool) -> None:
     table = Table(title="Upstream Repositories")
     table.add_column("Repo", style="cyan")
     table.add_column("Path", style="dim")
+    table.add_column("Version", style="green")
     table.add_column("Local SHA", style="bold")
     table.add_column("Remote HEAD", style="bold")
 
@@ -41,7 +42,8 @@ def upstream_status(include_aidlc: bool, refresh_remote: bool) -> None:
             if not refresh_remote
             else "(unavailable)"
         )
-        table.add_row(item["name"], item["path"], local_sha, remote_sha)
+        version = item.get("version_tag") or "(missing)"
+        table.add_row(item["name"], item["path"], version, local_sha, remote_sha)
 
     console.print(table)
 
@@ -65,12 +67,14 @@ def upstream_sync(include_aidlc: bool, sync_aidlc_rules: bool) -> None:
 
     table = Table(title="Synced Upstreams")
     table.add_column("Repo", style="cyan")
+    table.add_column("Version", style="green")
     table.add_column("SHA", style="bold")
     table.add_column("Changed", style="bold")
 
     for item in manifest.get("repos", []):
         changed = "[yellow]Yes[/yellow]" if item.get("changed") else "[green]No[/green]"
-        table.add_row(item["name"], item["synced_sha"][:12], changed)
+        version = item.get("version_tag") or item["synced_sha"][:12]
+        table.add_row(item["name"], version, item["synced_sha"][:12], changed)
 
     console.print(table)
 

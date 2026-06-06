@@ -91,6 +91,13 @@ case "${DOLIOS_INSTALL_OPTIONAL_TOOLS:-0}" in
 esac
 ok "Dependencies installed"
 
+# Step 5b: Sync vendor repos to latest upstream HEAD
+info "Syncing upstream vendor repos..."
+uv run dolios upstream sync || {
+    dim "Upstream sync failed — run 'dolios upstream sync' manually after install"
+}
+ok "Upstream vendor sync complete"
+
 # Step 6: Create ~/.dolios
 mkdir -p "$HOME/.dolios/traces"
 ok "Created ~/.dolios"

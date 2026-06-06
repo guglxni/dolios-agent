@@ -26,6 +26,28 @@ class UpstreamSpec:
     path: Path
 
 
+# Known-good upstream release tags (updated via `dolios upstream sync`).
+# Hermes uses calendar versioning (v2026.6.5); NemoClaw uses semver (v0.0.60).
+EXPECTED_UPSTREAM_TAGS: dict[str, str] = {
+    "hermes-agent": "v2026.6.5",
+    "nemoclaw": "v0.0.60",
+    "hermes-agent-self-evolution": "4693c8f",
+}
+
+
+def resolve_repo_version(repo_path: Path) -> str | None:
+    """Return git describe output for a synced vendor repo (tag or SHA)."""
+    if not (repo_path / ".git").exists():
+        return None
+    try:
+        return UpstreamManager._run(
+            ["git", "describe", "--tags", "--always", "--dirty"],
+            cwd=repo_path,
+        ).strip()
+    except subprocess.CalledProcessError:
+        return None
+
+
 CORE_UPSTREAMS: tuple[UpstreamSpec, ...] = (
     UpstreamSpec(
         name="hermes-agent",
@@ -98,6 +120,8 @@ class UpstreamManager:
                 except (subprocess.CalledProcessError, ValueError):
                     remote_sha = None
 
+            version_tag = resolve_repo_version(repo_path) if local_sha else None
+
             items.append(
                 {
                     "name": spec.name,
@@ -105,6 +129,8 @@ class UpstreamManager:
                     "exists": (repo_path / ".git").exists(),
                     "local_sha": local_sha,
                     "remote_sha": remote_sha,
+                    "version_tag": version_tag,
+                    "expected_tag": EXPECTED_UPSTREAM_TAGS.get(spec.name),
                 }
             )
 
@@ -159,6 +185,8 @@ class UpstreamManager:
             "remote_head": remote_sha,
             "synced_sha": after,
             "changed": before != after,
+            "version_tag": resolve_repo_version(repo_path),
+            "expected_tag": EXPECTED_UPSTREAM_TAGS.get(spec.name),
         }
 
     def sync_aidlc_rule_details(self) -> dict[str, Any]:

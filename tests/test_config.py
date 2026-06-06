@@ -16,7 +16,7 @@ def test_default_config():
 
 def test_sandbox_config_defaults():
     config = SandboxConfig()
-    assert config.blueprint_version == "0.1.0"
+    assert config.blueprint_version == "0.2.0"
     assert config.policy_file == "policies/dolios-default.yaml"
 
 

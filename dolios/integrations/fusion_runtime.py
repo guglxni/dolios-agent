@@ -37,16 +37,32 @@ class DoliosFusionRuntime:
         route: InferenceRoute,
         max_iterations: int = 90,
         policy_guard: Callable[[str, dict[str, Any]], tuple[bool, str]] | None = None,
+        session_id: str | None = None,
     ) -> Any:
         return self.hermes.create_agent(
             base_url=route.base_url,
             api_key=route.api_key,
             model=route.model,
+            provider=route.provider,
+            session_id=session_id,
             policy_guard=policy_guard,
             max_iterations=max_iterations,
             platform="cli",
             skip_context_files=False,
+            load_soul_identity=True,
             skip_memory=False,
+        )
+
+    def steer(self, agent: Any, text: str) -> bool:
+        return self.hermes.steer(agent, text)
+
+    def switch_model(self, agent: Any, route: InferenceRoute) -> Any:
+        return self.hermes.switch_model(
+            agent,
+            model=route.model,
+            provider=route.provider,
+            api_key=route.api_key,
+            base_url=route.base_url,
         )
 
     def start_trace(self, trace_id: str, session_id: str, task: str) -> None:

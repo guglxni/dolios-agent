@@ -49,6 +49,8 @@ _VALID_EVENTS = frozenset(
         "workflow_blocked",
         "injection_blocked",
         "response_dlp_finding",
+        "steer_accepted",
+        "model_switched",
     }
 )
 

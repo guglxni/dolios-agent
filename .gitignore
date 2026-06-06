@@ -69,3 +69,6 @@ vendor/
 CODEBASE-REVIEW.md
 SECURITY-AUDIT.md
 repomix-output.xml
+.gitnexus
+graphify-out/
+.specstory/

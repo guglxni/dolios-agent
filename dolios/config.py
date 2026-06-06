@@ -36,7 +36,8 @@ class SandboxConfig:
 
     enabled: bool = True
     sandbox_name: str = "dolios-default"
-    blueprint_version: str = "0.1.0"
+    blueprint_version: str = "0.2.0"
+    minimal_bootstrap: bool = False  # NEMOCLAW_MINIMAL_BOOTSTRAP workspace seed
     policy_file: str = "policies/dolios-default.yaml"
     openshell_path: str | None = None
     policy_tier: str = "balanced"  # restricted | balanced | open

@@ -60,6 +60,7 @@ dolios
 
 ```bash
 dolios              # Interactive CLI — start a conversation
+# In-session: /help · /model <provider> · /steer <msg> · /soul · /aidlc
 dolios setup        # Full setup wizard (providers, API keys, sandbox)
 dolios model        # Choose your inference provider and model
 dolios sandbox status   # Check sandbox health and policy state

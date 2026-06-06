@@ -6,6 +6,7 @@ Provides a Dolios-owned seam for the Hermes Agent core loop.
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import json
 import logging
 from contextlib import contextmanager
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 OPTIONAL_TOOL_IMPORT_MODULES = {
     "tools.web_tools": "firecrawl",
     "tools.image_generation_tool": "fal_client",
+    "tools.browser_dialog_tool": "websockets",
 }
 
 
@@ -74,13 +76,20 @@ class HermesRuntimeAdapter:
         base_url: str,
         api_key: str,
         model: str,
+        provider: str | None = None,
+        session_id: str | None = None,
         policy_guard: Callable[[str, dict[str, Any]], tuple[bool, str]] | None = None,
         max_iterations: int = 90,
         platform: str = "cli",
         skip_context_files: bool = False,
+        load_soul_identity: bool = True,
         skip_memory: bool = False,
     ) -> Any:
-        """Create a Hermes AIAgent instance from the latest synced vendor repo."""
+        """Create a Hermes AIAgent instance from the latest synced vendor repo.
+
+        Hermes v2026.6.5 (v0.16.0) adds native SOUL.md loading via load_soul_identity,
+        provider-aware routing, mid-turn steer(), and switch_model().
+        """
         ensure_vendor_on_path()
         if policy_guard is not None:
             self._install_tool_guard(policy_guard)
@@ -88,15 +97,48 @@ class HermesRuntimeAdapter:
         with self._suppress_optional_tool_import_warnings():
             from run_agent import AIAgent
 
-        return AIAgent(
-            base_url=base_url,
-            api_key=api_key,
-            model=model,
-            max_iterations=max_iterations,
-            platform=platform,
-            skip_context_files=skip_context_files,
-            skip_memory=skip_memory,
-        )
+        agent_kwargs: dict[str, Any] = {
+            "base_url": base_url,
+            "api_key": api_key,
+            "model": model,
+            "max_iterations": max_iterations,
+            "platform": platform,
+            "skip_context_files": skip_context_files,
+            "load_soul_identity": load_soul_identity,
+            "skip_memory": skip_memory,
+        }
+        if provider:
+            agent_kwargs["provider"] = provider
+        if session_id:
+            agent_kwargs["session_id"] = session_id
+
+        return AIAgent(**agent_kwargs)
+
+    @staticmethod
+    def steer(agent: Any, text: str) -> bool:
+        """Inject a mid-turn user message into the live agent loop (Hermes v0.16+)."""
+        steer_fn = getattr(agent, "steer", None)
+        if not callable(steer_fn):
+            raise RuntimeError("Hermes steer() unavailable — sync vendor/hermes-agent to v2026.6.5+")
+        return bool(steer_fn(text))
+
+    @staticmethod
+    def switch_model(
+        agent: Any,
+        *,
+        model: str,
+        provider: str,
+        api_key: str = "",
+        base_url: str = "",
+        api_mode: str = "",
+    ) -> Any:
+        """Hot-swap model/provider on a live agent (Hermes v0.16+)."""
+        switch_fn = getattr(agent, "switch_model", None)
+        if not callable(switch_fn):
+            raise RuntimeError(
+                "Hermes switch_model() unavailable — sync vendor/hermes-agent to v2026.6.5+"
+            )
+        return switch_fn(model, provider, api_key=api_key, base_url=base_url, api_mode=api_mode)
 
     def _install_tool_guard(
         self,
@@ -152,13 +194,20 @@ class HermesRuntimeAdapter:
             "AIAgent": False,
             "handle_function_call": False,
             "build_context_files_prompt": False,
+            "steer": False,
+            "switch_model": False,
+            "load_soul_identity": False,
         }
 
         try:
             with self._suppress_optional_tool_import_warnings():
-                from run_agent import AIAgent  # noqa: F401
+                from run_agent import AIAgent
 
             status["AIAgent"] = True
+            status["steer"] = callable(getattr(AIAgent, "steer", None))
+            status["switch_model"] = callable(getattr(AIAgent, "switch_model", None))
+            params = inspect.signature(AIAgent.__init__).parameters
+            status["load_soul_identity"] = "load_soul_identity" in params
         except ImportError:
             return status
 
