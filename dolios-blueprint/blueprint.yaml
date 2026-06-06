@@ -1,5 +1,6 @@
-version: "0.1.0"
-min_openshell_version: "0.1.0"
+version: "0.2.0"
+min_openshell_version: "0.0.44"
+max_openshell_version: "0.0.44"
 digest: ""
 
 profiles:
@@ -16,7 +17,8 @@ description: |
   and self-evolution pipeline integration.
 
   Unlike NemoClaw's default blueprint which installs OpenClaw, this blueprint
-  installs Hermes Agent v0.3.0 with Python 3.12, uv, and Dolios orchestrator.
+  installs Hermes Agent v2026.6.5 (v0.16.0) with Python 3.12, uv, and Dolios orchestrator.
+  Aligned with NemoClaw v0.0.60 OpenShell sandbox lifecycle and policy patterns.
 
 components:
   sandbox:
@@ -28,7 +30,7 @@ components:
 
   agent:
     runtime: "hermes-agent"
-    version: "0.3.0"
+    version: "2026.6.5"
     python_version: "3.12"
     package_manager: "uv"
     soul_md: "/sandbox/dolios/brand/SOUL.md"

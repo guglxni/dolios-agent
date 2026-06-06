@@ -71,6 +71,28 @@ class ReleaseVerifier:
                 details=f"missing repos: {', '.join(missing)}",
             )
 
+        from dolios.upstream_manager import EXPECTED_UPSTREAM_TAGS, resolve_repo_version
+
+        stale: list[str] = []
+        for item in repos:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name", "")
+            version_tag = item.get("version_tag", "")
+            if not version_tag:
+                repo_path = self.project_dir / str(item.get("path", ""))
+                version_tag = resolve_repo_version(repo_path) or ""
+            expected = item.get("expected_tag") or EXPECTED_UPSTREAM_TAGS.get(name, "")
+            if expected and version_tag and not version_tag.startswith(expected):
+                stale.append(f"{name} ({version_tag})")
+
+        if stale:
+            return ReleaseCheckResult(
+                name="upstream-manifest",
+                passed=False,
+                details=f"vendor versions behind expected: {', '.join(stale)}",
+            )
+
         return ReleaseCheckResult(
             name="upstream-manifest",
             passed=True,

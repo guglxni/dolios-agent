@@ -107,7 +107,10 @@ class DoliosOrchestrator:
         soul_content = self.brand.get_soul_content()
         soul_dest = hermes_home / "SOUL.md"
         soul_dest.write_text(soul_content)
-        logger.info(f"Installed SOUL.md → {soul_dest}")
+        logger.info(
+            "Installed SOUL.md → %s (Hermes load_soul_identity reads from HERMES_HOME)",
+            soul_dest,
+        )
 
     @staticmethod
     def _scan_content_for_injection(content: str, filename: str) -> str | None:
@@ -295,6 +298,7 @@ class DoliosOrchestrator:
             agent = self.runtime.create_agent(
                 route,
                 max_iterations=90,
+                session_id=self._session_id,
                 policy_guard=self._policy_guard_tool_call,
             )
         except ImportError:
@@ -414,6 +418,157 @@ class DoliosOrchestrator:
         console.print("\n[yellow]Unknown /aidlc command.[/yellow] Try /aidlc help.\n")
         return True
 
+    def _print_runtime_help(self, console: Any) -> None:
+        console.print(
+            "\n[bold]Dolios Runtime Commands[/bold]\n"
+            "  /help                    Show this help\n"
+            "  /model                   Show active model and providers\n"
+            "  /model <provider>        Hot-swap inference provider/model\n"
+            "  /steer <message>         Inject guidance into the live agent turn\n"
+            "  /soul                    Show SOUL.md / HERMES_HOME identity status\n"
+            "  /aidlc status            Show AI-DLC workflow phase\n"
+            "  exit, /exit, /quit       End the session\n"
+        )
+
+    def _handle_soul_command(self, console: Any) -> None:
+        hermes_home = self.config.home / "hermes"
+        soul_path = hermes_home / "SOUL.md"
+        console.print("\n[bold]Dolios Identity (Hermes SOUL)[/bold]")
+        console.print(f"  HERMES_HOME: [cyan]{hermes_home}[/cyan]")
+        if soul_path.exists():
+            console.print(f"  SOUL.md: [green]installed[/green] ({soul_path})")
+        else:
+            console.print("  SOUL.md: [red]missing[/red] — run dolios setup or restart session")
+        console.print(
+            "  load_soul_identity: [green]enabled[/green] "
+            "(Hermes reads SOUL.md at agent startup)\n"
+        )
+
+    def _apply_active_route(self, route: InferenceRoute) -> None:
+        """Persist and export the active inference route for Hermes runtime."""
+        self._active_route = route
+        os.environ["OPENAI_API_BASE"] = route.base_url
+        os.environ["OPENAI_BASE_URL"] = route.base_url
+        os.environ["OPENAI_API_KEY"] = route.api_key
+        os.environ["DEFAULT_MODEL"] = route.model
+        self.config.inference.default_provider = route.provider
+
+    def _handle_steer_command(self, user_input: str, agent: Any, console: Any) -> bool:
+        parts = user_input.strip().split(maxsplit=1)
+        if len(parts) < 2 or not parts[1].strip():
+            console.print(
+                "\n[yellow]Usage:[/yellow] /steer <message>\n"
+                "[dim]Injects guidance into the current agent turn without interrupting "
+                "tool execution.[/dim]\n"
+            )
+            return True
+
+        steer_text = parts[1].strip()
+        if self._scan_content_for_injection(steer_text, "steer_message") is None:
+            logger.warning(
+                "SECURITY: Steer blocked for session %s — injection pattern detected",
+                self._session_id,
+            )
+            console.print(
+                "\n[yellow]SECURITY:[/yellow] Steer blocked — injection pattern detected.\n"
+            )
+            return True
+
+        try:
+            accepted = self.runtime.steer(agent, steer_text)
+        except RuntimeError as exc:
+            console.print(f"\n[red]{exc}[/red]\n")
+            return True
+
+        if accepted:
+            console.print("\n[green]Steer queued[/green] — agent will see this on its next step.\n")
+            logger.info("Steer accepted for session %s", self._session_id)
+        else:
+            console.print("\n[yellow]Steer ignored[/yellow] — message was empty.\n")
+        return True
+
+    def _handle_model_command(self, user_input: str, agent: Any, console: Any) -> bool:
+        parts = user_input.strip().split()
+        action = parts[1].lower() if len(parts) > 1 else "status"
+
+        if action in {"status", "list", "help"}:
+            route = getattr(self, "_active_route", None)
+            if route:
+                console.print(
+                    f"\n[bold]Active model:[/bold] {route.provider} → {route.model}\n"
+                    f"  Endpoint: {route.base_url}\n"
+                )
+            table_providers = self.inference_router.list_providers()
+            from rich.table import Table
+
+            table = Table(title="Inference Providers")
+            table.add_column("Provider", style="cyan")
+            table.add_column("Model", style="dim")
+            table.add_column("Available", style="bold")
+            for provider in table_providers:
+                status = "[green]Yes[/green]" if provider["available"] else "[red]No[/red]"
+                marker = " ← active" if route and provider["name"] == route.provider else ""
+                table.add_row(provider["name"] + marker, provider["model"], status)
+            console.print(table)
+            console.print("\n[dim]Switch with: /model <provider>[/dim]\n")
+            return True
+
+        provider_name = parts[2] if action == "switch" and len(parts) > 2 else parts[1]
+        if provider_name in {"switch", "help"}:
+            console.print("\n[yellow]Usage:[/yellow] /model <provider>\n")
+            return True
+
+        self.inference_router.configure()
+        if provider_name not in self.inference_router._available_providers:
+            console.print(
+                f"\n[red]Provider unavailable:[/red] {provider_name}. "
+                "Check API keys with [bold]dolios doctor[/bold].\n"
+            )
+            return True
+
+        route = self.inference_router.route(preferred_provider=provider_name)
+
+        try:
+            self.runtime.switch_model(agent, route)
+        except Exception as exc:
+            logger.error("Model switch failed: %s", exc, exc_info=True)
+            console.print(f"\n[red]Model switch failed:[/red] {exc}\n")
+            return True
+
+        self._apply_active_route(route)
+        console.print(
+            f"\n[green]Model switched[/green] to [bold]{route.provider}[/bold]: {route.model}\n"
+        )
+        logger.info(
+            "Model switched for session %s: %s → %s (%s)",
+            self._session_id,
+            route.provider,
+            route.model,
+            route.reason,
+        )
+        return True
+
+    def _handle_runtime_command(self, user_input: str, agent: Any, console: Any) -> bool:
+        """Handle in-session Hermes v0.16 runtime commands."""
+        stripped = user_input.strip()
+        lower = stripped.lower()
+
+        if lower in {"/help", "/commands"}:
+            self._print_runtime_help(console)
+            return True
+
+        if lower.startswith("/steer"):
+            return self._handle_steer_command(stripped, agent, console)
+
+        if lower.startswith("/model"):
+            return self._handle_model_command(stripped, agent, console)
+
+        if lower.startswith("/soul"):
+            self._handle_soul_command(console)
+            return True
+
+        return False
+
     async def _run_agent_loop(self, agent: Any) -> None:
         """Run the Hermes Agent interactive conversation loop.
 
@@ -427,7 +582,18 @@ class DoliosOrchestrator:
 
         console = Console()
 
-        console.print("[bold blue]Δ Dolios[/bold blue] ready. Type your message.\n")
+        route = getattr(self, "_active_route", None)
+        if route:
+            console.print(
+                f"[bold blue]Δ Dolios[/bold blue] ready — "
+                f"[dim]{route.provider} → {route.model}[/dim]\n"
+                "[dim]Runtime: /help · /model · /steer · /soul · /aidlc[/dim]\n"
+            )
+        else:
+            console.print(
+                "[bold blue]Δ Dolios[/bold blue] ready. "
+                "[dim]Runtime: /help · /model · /steer · /soul · /aidlc[/dim]\n"
+            )
 
         while True:
             try:
@@ -440,6 +606,9 @@ class DoliosOrchestrator:
 
             if user_input.strip().lower() in ("exit", "quit", "/exit", "/quit"):
                 break
+
+            if self._handle_runtime_command(user_input, agent, console):
+                continue
 
             if self._handle_aidlc_command(user_input, console):
                 continue

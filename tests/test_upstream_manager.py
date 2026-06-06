@@ -2,7 +2,12 @@
 
 import pytest
 
-from dolios.upstream_manager import UpstreamManager, parse_ls_remote_head
+from dolios.upstream_manager import (
+    EXPECTED_UPSTREAM_TAGS,
+    UpstreamManager,
+    parse_ls_remote_head,
+    resolve_repo_version,
+)
 
 
 def test_parse_ls_remote_head_valid():
@@ -70,6 +75,18 @@ def test_sync_aidlc_rule_details(tmp_path):
     assert target_file.read_text() == "# Process Overview\n"
     assert metadata["version"] == "0.1.7"
     assert metadata["files_synced"] == 1
+
+
+def test_expected_upstream_tags_cover_core_repos():
+    assert set(EXPECTED_UPSTREAM_TAGS) == {
+        "hermes-agent",
+        "nemoclaw",
+        "hermes-agent-self-evolution",
+    }
+
+
+def test_resolve_repo_version_missing_repo(tmp_path):
+    assert resolve_repo_version(tmp_path / "missing") is None
 
 
 def test_sync_aidlc_rule_details_requires_repo(tmp_path):
